@@ -340,7 +340,7 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
                       color: "#333",
                     }}
                   >
-                    Admin User
+                    User
                   </span>
                   <span
                     style={{
