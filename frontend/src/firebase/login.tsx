@@ -1,8 +1,13 @@
 import { Fragment, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Card, Col, Form, Alert } from "react-bootstrap";
+import { toast } from 'react-toastify';
+import { veloraAPI } from '../api/velora';
+
 const Login = () => {
   const [passwordshow1, setpasswordshow1] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const [data, setData] = useState({
     email: "",
@@ -17,8 +22,24 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem("token", "demo-token");
-    navigate("/dashboard");
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await veloraAPI.login(data);
+      
+      // Store token and company info
+      localStorage.setItem('token', response.access_token);
+      localStorage.setItem('company', JSON.stringify(response.company));
+      
+      toast.success('Login successful!');
+      navigate("/dashboard");
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Login failed');
+      toast.error(error.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
 
@@ -38,6 +59,7 @@ const Login = () => {
                   <p className="mb-4 text-muted op-7 fw-normal text-center">
                     Welcome back!
                   </p>
+                  {error && <Alert variant="danger">{error}</Alert>}
                   <Form onSubmit={handleSubmit}>
 
                     <Col xl={12}>
@@ -88,8 +110,9 @@ placeholder="Enter password"
                       <button
                         type="submit"
                         className="btn btn-primary"
+                        disabled={loading}
 >
-                        Sign In
+                        {loading ? 'Signing In...' : 'Sign In'}
                       </button>
                     </div>
                   </Form>

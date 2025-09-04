@@ -1,45 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Button, Form, Modal, Table, Alert } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+import { veloraAPI } from '../../../api/velora';
 
 interface Customer {
   id: string;
-  customerId: string;
-  customerName: string;
-  phoneNumber: string;
-  email: string;
+  name: string;
+  phone: string;
+  email?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const CustomerMaster: React.FC = () => {
-  const [customers, setCustomers] = useState<Customer[]>([
-    { id: '1', customerId: 'CUST001', customerName: 'John Doe', phoneNumber: '9876543210', email: 'john@example.com' },
-    { id: '2', customerId: 'CUST002', customerName: 'Jane Smith', phoneNumber: '9876543211', email: 'jane@example.com' },
-  ]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [open, setOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    customerId: '',
-    customerName: '',
-    phoneNumber: '',
+    name: '',
+    phone: '',
     email: '',
   });
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const data = await veloraAPI.getCustomers();
+      setCustomers(data);
+    } catch (error) {
+      toast.error('Failed to fetch customers');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpen = (customer?: Customer) => {
     if (customer) {
       setEditingCustomer(customer);
       setFormData({
-        customerId: customer.customerId,
-        customerName: customer.customerName,
-        phoneNumber: customer.phoneNumber,
-        email: customer.email,
+        name: customer.name,
+        phone: customer.phone,
+        email: customer.email || '',
       });
     } else {
       setEditingCustomer(null);
       setFormData({
-        customerId: `CUST${String(customers.length + 1).padStart(3, '0')}`,
-        customerName: '',
-        phoneNumber: '',
+        name: '',
+        phone: '',
         email: '',
       });
     }
@@ -54,41 +68,19 @@ const CustomerMaster: React.FC = () => {
   };
 
   const validateForm = () => {
-    // Check for duplicate phone number
-    const phoneExists = customers.some(customer => 
-      customer.phoneNumber === formData.phoneNumber && 
-      customer.id !== editingCustomer?.id
-    );
-    
-    // Check for duplicate email
-    const emailExists = customers.some(customer => 
-      customer.email === formData.email && 
-      customer.id !== editingCustomer?.id
-    );
-
-    if (phoneExists) {
-      setError('Phone number already exists');
-      return false;
-    }
-
-    if (emailExists) {
-      setError('Email already exists');
-      return false;
-    }
-
-    if (!formData.customerName || !formData.phoneNumber || !formData.email) {
-      setError('All fields are required');
+    if (!formData.name || !formData.phone) {
+      setError('Name and phone are required');
       return false;
     }
 
     // Validate phone number (10 digits)
-    if (!/^\d{10}$/.test(formData.phoneNumber)) {
+    if (!/^\d{10}$/.test(formData.phone)) {
       setError('Phone number must be 10 digits');
       return false;
     }
 
-    // Validate email
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    // Validate email if provided
+    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       setError('Please enter a valid email');
       return false;
     }
@@ -96,32 +88,43 @@ const CustomerMaster: React.FC = () => {
     return true;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateForm()) return;
 
-    const newCustomer: Customer = {
-      id: editingCustomer?.id || Date.now().toString(),
-      customerId: formData.customerId,
-      customerName: formData.customerName,
-      phoneNumber: formData.phoneNumber,
-      email: formData.email,
-    };
-
-    if (editingCustomer) {
-      setCustomers(customers.map(customer => customer.id === editingCustomer.id ? newCustomer : customer));
-    } else {
-      setCustomers([...customers, newCustomer]);
+    setLoading(true);
+    try {
+      if (editingCustomer) {
+        await veloraAPI.updateCustomer(editingCustomer.id, formData);
+        toast.success('Customer updated successfully');
+      } else {
+        await veloraAPI.createCustomer(formData);
+        toast.success('Customer created successfully');
+      }
+      
+      handleClose();
+      fetchCustomers();
+    } catch (error) {
+      toast.error('Operation failed');
+    } finally {
+      setLoading(false);
     }
-    handleClose();
   };
 
-  const handleDelete = (id: string) => {
-    setCustomers(customers.filter(customer => customer.id !== id));
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this customer?')) {
+      try {
+        await veloraAPI.deleteCustomer(id);
+        toast.success('Customer deleted successfully');
+        fetchCustomers();
+      } catch (error) {
+        toast.error('Failed to delete customer');
+      }
+    }
   };
 
   const filteredCustomers = customers.filter(customer =>
-    customer.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phoneNumber.includes(searchTerm)
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.phone.includes(searchTerm)
   );
 
   return (
@@ -156,7 +159,6 @@ const CustomerMaster: React.FC = () => {
             <Table className="table text-nowrap">
               <thead>
                 <tr>
-                  <th>Customer ID</th>
                   <th>Customer Name</th>
                   <th>Phone Number</th>
                   <th>Email</th>
@@ -164,12 +166,13 @@ const CustomerMaster: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredCustomers.map((customer) => (
+                {loading ? (
+                  <tr><td colSpan={4} className="text-center">Loading...</td></tr>
+                ) : filteredCustomers.map((customer) => (
                   <tr key={customer.id}>
-                    <td>{customer.customerId}</td>
-                    <td>{customer.customerName}</td>
-                    <td>{customer.phoneNumber}</td>
-                    <td>{customer.email}</td>
+                    <td>{customer.name}</td>
+                    <td>{customer.phone}</td>
+                    <td>{customer.email || '-'}</td>
                     <td>
                       <Button size="sm" variant="primary" className="me-2" onClick={() => handleOpen(customer)}>
                         <i className="fe fe-edit"></i>
@@ -195,31 +198,25 @@ const CustomerMaster: React.FC = () => {
           <Form>
             <Row>
               <Col md={12} className="mb-3">
-                <Form.Label>Customer ID</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.customerId}
-                  onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                />
-              </Col>
-              <Col md={12} className="mb-3">
                 <Form.Label>Customer Name</Form.Label>
                 <Form.Control
                   type="text"
-                  value={formData.customerName}
-                  onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </Col>
               <Col md={12} className="mb-3">
                 <Form.Label>Phone Number</Form.Label>
                 <Form.Control
                   type="text"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  required
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </Col>
               <Col md={12} className="mb-3">
-                <Form.Label>Email</Form.Label>
+                <Form.Label>Email (Optional)</Form.Label>
                 <Form.Control
                   type="email"
                   value={formData.email}
@@ -233,8 +230,8 @@ const CustomerMaster: React.FC = () => {
           <Button variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSave}>
-            {editingCustomer ? 'Update' : 'Save'}
+          <Button variant="primary" onClick={handleSave} disabled={loading}>
+            {loading ? 'Saving...' : editingCustomer ? 'Update' : 'Save'}
           </Button>
         </Modal.Footer>
       </Modal>

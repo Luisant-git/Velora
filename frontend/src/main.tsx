@@ -22,7 +22,6 @@ const ProtectedRoute = lazy(() => import("./firebase/ProtectedRoute.tsx"));
 const Signup = lazy(() => import("./firebase/signup.tsx"));
 
 createRoot(document.getElementById("root")!).render(
-
     <>
    <ThemeProvider theme={theme}>
       <Provider store={store}>
@@ -70,5 +69,4 @@ createRoot(document.getElementById("root")!).render(
       </Provider>
      </ThemeProvider>
     </>
-
 );

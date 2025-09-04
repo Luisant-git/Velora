@@ -1,18 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Button, Form, Modal, Table } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+import { veloraAPI } from '../../../api/velora';
+import SalesTable from './SalesTable';
 
 interface Item {
+  id: string;
   itemCode: string;
   itemName: string;
   tax: number;
-  sellingPrice: number;
+  sellingRate: number;
   mrp: number;
 }
 
 interface Customer {
-  phoneNumber: string;
-  customerName: string;
-  email: string;
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
 }
 
 interface SaleItem {
@@ -38,17 +43,53 @@ interface Sale {
   grandTotal: number;
 }
 
-const SalesEntry: React.FC = () => {
-  // Mock data
-  const mockItems: Item[] = [
-    { itemCode: 'ITM001', itemName: 'Sample Item 1', tax: 18, sellingPrice: 100, mrp: 120 },
-    { itemCode: 'ITM002', itemName: 'Sample Item 2', tax: 12, sellingPrice: 200, mrp: 250 },
-  ];
+interface APISale {
+  id: string;
+  totalAmount: number;
+  discount: number;
+  createdAt: string;
+  customer: {
+    id: string;
+    name: string;
+    phone: string;
+  };
+  saleItems: {
+    id: string;
+    quantity: number;
+    item: {
+      id: string;
+      itemCode: string;
+      itemName: string;
+      sellingRate: number;
+      tax: number;
+    };
+  }[];
+}
 
-  const mockCustomers: Customer[] = [
-    { phoneNumber: '9876543210', customerName: 'John Doe', email: 'john@example.com' },
-    { phoneNumber: '9876543211', customerName: 'Jane Smith', email: 'jane@example.com' },
-  ];
+const SalesEntry: React.FC = () => {
+  const [items, setItems] = useState<Item[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [apiSales, setApiSales] = useState<APISale[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [itemsData, customersData, salesData] = await Promise.all([
+        veloraAPI.getItems(),
+        veloraAPI.getCustomers(),
+        veloraAPI.getSales()
+      ]);
+      setItems(itemsData);
+      setCustomers(customersData);
+      setApiSales(salesData);
+    } catch (error) {
+      toast.error('Failed to fetch data');
+    }
+  };
 
   const [sales, setSales] = useState<Sale[]>([]);
   const [open, setOpen] = useState(false);
@@ -90,8 +131,8 @@ const SalesEntry: React.FC = () => {
     if (customer) {
       setCurrentSale(prev => ({
         ...prev,
-        customerPhone: customer.phoneNumber,
-        customerName: customer.customerName,
+        customerPhone: customer.phone,
+        customerName: customer.name,
       }));
     }
   };
@@ -117,10 +158,10 @@ const SalesEntry: React.FC = () => {
         
         // Auto-fetch item details when item code is selected
         if (field === 'itemCode') {
-          const selectedItem = mockItems.find(i => i.itemCode === value);
+          const selectedItem = items.find(i => i.itemCode === value);
           if (selectedItem) {
             updatedItem.itemName = selectedItem.itemName;
-            updatedItem.sellingPrice = selectedItem.sellingPrice;
+            updatedItem.sellingPrice = selectedItem.sellingRate;
             updatedItem.tax = selectedItem.tax;
           }
         }
@@ -157,22 +198,62 @@ const SalesEntry: React.FC = () => {
     return { subtotal, totalTax, grandTotal };
   };
 
-  const handleSave = () => {
-    const totals = calculateTotals();
-    const newSale: Sale = {
-      id: Date.now().toString(),
-      invoiceNo: currentSale.invoiceNo!,
-      date: currentSale.date!,
-      customerPhone: currentSale.customerPhone!,
-      customerName: currentSale.customerName!,
-      items: saleItems,
-      subtotal: totals.subtotal,
-      totalTax: totals.totalTax,
-      grandTotal: totals.grandTotal,
-    };
+  const handleSave = async () => {
+    if (!selectedCustomer || saleItems.length === 0) {
+      toast.error('Please select customer and add items');
+      return;
+    }
 
-    setSales([...sales, newSale]);
-    handleClose();
+    setLoading(true);
+    try {
+      const totals = calculateTotals();
+      const saleData = {
+        customerId: selectedCustomer.id,
+        items: saleItems.map(item => {
+          const foundItem = items.find(i => i.itemCode === item.itemCode);
+          if (!foundItem?.id) {
+            throw new Error(`Item not found: ${item.itemCode}`);
+          }
+          return {
+            itemId: foundItem.id,
+            quantity: Number(item.quantity)
+          };
+        }),
+        discount: 0,
+        totalAmount: Number(totals.grandTotal.toFixed(2))
+      };
+
+      console.log('Sale Data:', JSON.stringify(saleData, null, 2));
+      await veloraAPI.createSale(saleData);
+      toast.success('Sale created successfully');
+      
+      const newSale: Sale = {
+        id: Date.now().toString(),
+        invoiceNo: currentSale.invoiceNo!,
+        date: currentSale.date!,
+        customerPhone: currentSale.customerPhone!,
+        customerName: currentSale.customerName!,
+        items: saleItems,
+        subtotal: totals.subtotal,
+        totalTax: totals.totalTax,
+        grandTotal: totals.grandTotal,
+      };
+
+      setSales([...sales, newSale]);
+      fetchData(); // Refresh sales data
+      handleClose();
+    } catch (error: any) {
+      console.error('Sale creation error:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(`Failed to create sale: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadInvoice = (saleId: string) => {
+    // TODO: Implement invoice download functionality
+    toast.info('Invoice download feature coming soon!');
   };
 
   const totals = calculateTotals();
@@ -193,36 +274,10 @@ const SalesEntry: React.FC = () => {
 
       <Card className="custom-card">
         <Card.Body>
-          <div className="table-responsive">
-            <Table className="table text-nowrap">
-              <thead>
-                <tr>
-                  <th>Invoice No</th>
-                  <th>Date</th>
-                  <th>Customer</th>
-                  <th>Items</th>
-                  <th>Total Amount</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.map((sale) => (
-                  <tr key={sale.id}>
-                    <td>{sale.invoiceNo}</td>
-                    <td>{sale.date}</td>
-                    <td>{sale.customerName}</td>
-                    <td>{sale.items.length}</td>
-                    <td>₹{sale.grandTotal.toFixed(2)}</td>
-                    <td>
-                      <Button size="sm" variant="primary">
-                        <i className="fe fe-printer"></i>
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
+          <SalesTable 
+            sales={apiSales} 
+            onDownloadInvoice={handleDownloadInvoice}
+          />
         </Card.Body>
       </Card>
 
@@ -254,16 +309,16 @@ const SalesEntry: React.FC = () => {
               <Col md={12} className="mb-3">
                 <Form.Label>Customer</Form.Label>
                 <Form.Select
-                  value={selectedCustomer?.phoneNumber || ''}
+                  value={selectedCustomer?.id || ''}
                   onChange={(e) => {
-                    const customer = mockCustomers.find(c => c.phoneNumber === e.target.value);
+                    const customer = customers.find(c => c.id === e.target.value);
                     handleCustomerSelect(customer || null);
                   }}
                 >
                   <option value="">Select Customer</option>
-                  {mockCustomers.map((customer) => (
-                    <option key={customer.phoneNumber} value={customer.phoneNumber}>
-                      {customer.phoneNumber} - {customer.customerName}
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.phone} - {customer.name}
                     </option>
                   ))}
                 </Form.Select>
@@ -303,9 +358,9 @@ const SalesEntry: React.FC = () => {
                         onChange={(e) => updateSaleItem(item.id, 'itemCode', e.target.value)}
                       >
                         <option value="">Select Item</option>
-                        {mockItems.map((mockItem) => (
-                          <option key={mockItem.itemCode} value={mockItem.itemCode}>
-                            {mockItem.itemCode}
+                        {items.map((item) => (
+                          <option key={item.itemCode} value={item.itemCode}>
+                            {item.itemCode} - {item.itemName}
                           </option>
                         ))}
                       </Form.Select>
@@ -357,8 +412,8 @@ const SalesEntry: React.FC = () => {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>Cancel</Button>
-          <Button variant="primary" onClick={handleSave} disabled={saleItems.length === 0}>
-            Save Invoice
+          <Button variant="primary" onClick={handleSave} disabled={saleItems.length === 0 || loading}>
+            {loading ? 'Saving...' : 'Save Invoice'}
           </Button>
         </Modal.Footer>
       </Modal>

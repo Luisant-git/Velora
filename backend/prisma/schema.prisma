@@ -6,3 +6,89 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  companies Company[]
+  
+  @@map("admins")
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String
+  password    String
+  isActive    Boolean  @default(true)
+  dbName      String   @unique            // Database name for multi-tenancy
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  adminId     String
+  admin       Admin    @relation(fields: [adminId], references: [id])
+  
+  @@map("companies")
+}
+
+model ItemMaster {
+  id          String   @id @default(cuid())
+  itemCode    String   @unique
+  itemName    String
+  tax         Float
+  sellingRate Float
+  mrp         Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  saleItems   SaleItem[]
+  
+  @@map("item_masters")
+}
+
+model CustomerMaster {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  sales     Sale[]
+  
+  @@map("customer_masters")
+}
+
+model Sale {
+  id          String   @id @default(cuid())
+  totalAmount Float
+  discount    Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  customerId  String
+  customer    CustomerMaster @relation(fields: [customerId], references: [id])
+  
+  saleItems   SaleItem[]
+  
+  @@map("sales")
+}
+
+model SaleItem {
+  id       String @id @default(cuid())
+  quantity Int
+  
+  saleId   String
+  sale     Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  
+  itemId   String
+  item     ItemMaster @relation(fields: [itemId], references: [id])
+  
+  @@map("sale_items")
+}

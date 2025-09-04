@@ -1,17 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Button, Form, Table, Badge } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+import { veloraAPI } from '../../../api/velora';
 
-interface SalesReportData {
-  invoiceNo: string;
-  date: string;
-  customerName: string;
-  customerPhone: string;
-  itemCode: string;
-  itemName: string;
-  quantity: number;
-  amount: number;
-  tax: number;
-  total: number;
+interface Sale {
+  id: string;
+  totalAmount: number;
+  discount: number;
+  createdAt: string;
+  customer: {
+    id: string;
+    name: string;
+    phone: string;
+    email?: string;
+  };
+  saleItems: {
+    id: string;
+    quantity: number;
+    item: {
+      id: string;
+      itemCode: string;
+      itemName: string;
+      sellingRate: number;
+    };
+  }[];
 }
 
 const SalesReport: React.FC = () => {
@@ -19,39 +31,55 @@ const SalesReport: React.FC = () => {
   const [dateTo, setDateTo] = useState('');
   const [customerFilter, setCustomerFilter] = useState('');
   const [itemFilter, setItemFilter] = useState('');
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Mock data
-  const mockSalesData: SalesReportData[] = [
-    {
-      invoiceNo: 'INV0001',
-      date: '2024-01-15',
-      customerName: 'John Doe',
-      customerPhone: '9876543210',
-      itemCode: 'ITM001',
-      itemName: 'Sample Item 1',
-      quantity: 2,
-      amount: 200,
-      tax: 36,
-      total: 236,
-    },
-    {
-      invoiceNo: 'INV0002',
-      date: '2024-01-16',
-      customerName: 'Jane Smith',
-      customerPhone: '9876543211',
-      itemCode: 'ITM002',
-      itemName: 'Sample Item 2',
-      quantity: 1,
-      amount: 200,
-      tax: 24,
-      total: 224,
-    },
-  ];
+  useEffect(() => {
+    fetchSales();
+  }, []);
 
-  const [filteredData, setFilteredData] = useState<SalesReportData[]>(mockSalesData);
+  const fetchSales = async () => {
+    setLoading(true);
+    try {
+      const data = await veloraAPI.getSales();
+      setSales(data);
+    } catch (error) {
+      toast.error('Failed to fetch sales report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Convert sales data to flat structure for display
+  const getFlattenedData = () => {
+    const flattened: any[] = [];
+    sales.forEach(sale => {
+      sale.saleItems.forEach(saleItem => {
+        flattened.push({
+          saleId: sale.id,
+          date: new Date(sale.createdAt).toLocaleDateString(),
+          customerName: sale.customer.name,
+          customerPhone: sale.customer.phone,
+          itemCode: saleItem.item.itemCode,
+          itemName: saleItem.item.itemName,
+          quantity: saleItem.quantity,
+          amount: saleItem.item.sellingRate * saleItem.quantity,
+          total: sale.totalAmount,
+          discount: sale.discount
+        });
+      });
+    });
+    return flattened;
+  };
+
+  const [filteredData, setFilteredData] = useState<any[]>([]);
+
+  useEffect(() => {
+    setFilteredData(getFlattenedData());
+  }, [sales]);
 
   const handleFilter = () => {
-    let filtered = mockSalesData;
+    let filtered = getFlattenedData();
 
     if (dateFrom) {
       filtered = filtered.filter(item => item.date >= dateFrom);
@@ -83,16 +111,16 @@ const SalesReport: React.FC = () => {
     setDateTo('');
     setCustomerFilter('');
     setItemFilter('');
-    setFilteredData(mockSalesData);
+    setFilteredData(getFlattenedData());
   };
 
   const calculateSummary = () => {
-    const totalSales = filteredData.reduce((sum, item) => sum + item.total, 0);
-    const totalTax = filteredData.reduce((sum, item) => sum + item.tax, 0);
-    const totalCustomers = new Set(filteredData.map(item => item.customerPhone)).size;
-    const totalItems = filteredData.reduce((sum, item) => sum + item.quantity, 0);
+    const totalSales = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalDiscount = sales.reduce((sum, sale) => sum + sale.discount, 0);
+    const totalCustomers = new Set(sales.map(sale => sale.customer.id)).size;
+    const totalItems = sales.reduce((sum, sale) => sum + sale.saleItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
 
-    return { totalSales, totalTax, totalCustomers, totalItems };
+    return { totalSales, totalDiscount, totalCustomers, totalItems };
   };
 
   const summary = calculateSummary();
@@ -176,8 +204,8 @@ const SalesReport: React.FC = () => {
               <p className="mb-0">Total Sales</p>
             </Col>
             <Col lg={3} md={6} sm={6} xs={12} className="text-center mb-3">
-              <h4 className="text-secondary">₹{summary.totalTax.toFixed(2)}</h4>
-              <p className="mb-0">Total Tax</p>
+              <h4 className="text-secondary">₹{summary.totalDiscount.toFixed(2)}</h4>
+              <p className="mb-0">Total Discount</p>
             </Col>
             <Col lg={3} md={6} sm={6} xs={12} className="text-center mb-3">
               <h4 className="text-success">{summary.totalCustomers}</h4>
@@ -221,15 +249,17 @@ const SalesReport: React.FC = () => {
                   <th>Item Name</th>
                   <th>Quantity</th>
                   <th>Amount</th>
-                  <th>Tax</th>
+                  <th>Discount</th>
                   <th>Total</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((row, index) => (
+                {loading ? (
+                  <tr><td colSpan={10} className="text-center">Loading...</td></tr>
+                ) : filteredData.map((row, index) => (
                   <tr key={index}>
                     <td>
-                      <Badge bg="primary">{row.invoiceNo}</Badge>
+                      <Badge bg="primary">{row.saleId.slice(-6)}</Badge>
                     </td>
                     <td>{row.date}</td>
                     <td>{row.customerName}</td>
@@ -238,7 +268,7 @@ const SalesReport: React.FC = () => {
                     <td>{row.itemName}</td>
                     <td>{row.quantity}</td>
                     <td>₹{row.amount.toFixed(2)}</td>
-                    <td>₹{row.tax.toFixed(2)}</td>
+                    <td>₹{row.discount.toFixed(2)}</td>
                     <td>
                       <strong>₹{row.total.toFixed(2)}</strong>
                     </td>

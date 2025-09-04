@@ -1,30 +1,49 @@
-import React, { useState } from 'react';
-import { Card, Col, Row, Button, Form, Modal, Table } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Card, Col, Row, Button, Form, Modal, Table, Alert } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+import { veloraAPI } from '../../../api/velora';
 
 interface Item {
   id: string;
   itemCode: string;
   itemName: string;
   tax: number;
-  sellingPrice: number;
+  sellingRate: number;
   mrp: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const ItemMaster: React.FC = () => {
-  const [items, setItems] = useState<Item[]>([
-    { id: '1', itemCode: 'ITM001', itemName: 'Sample Item 1', tax: 18, sellingPrice: 100, mrp: 120 },
-    { id: '2', itemCode: 'ITM002', itemName: 'Sample Item 2', tax: 12, sellingPrice: 200, mrp: 250 },
-  ]);
+  const [items, setItems] = useState<Item[]>([]);
   const [show, setShow] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     itemCode: '',
     itemName: '',
     tax: '',
-    sellingPrice: '',
+    sellingRate: '',
     mrp: '',
   });
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      const data = await veloraAPI.getItems();
+      setItems(data);
+    } catch (error) {
+      toast.error('Failed to fetch items');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleShow = (item?: Item) => {
     if (item) {
@@ -33,47 +52,83 @@ const ItemMaster: React.FC = () => {
         itemCode: item.itemCode,
         itemName: item.itemName,
         tax: item.tax.toString(),
-        sellingPrice: item.sellingPrice.toString(),
+        sellingRate: item.sellingRate.toString(),
         mrp: item.mrp.toString(),
       });
     } else {
       setEditingItem(null);
       setFormData({
-        itemCode: `ITM${String(items.length + 1).padStart(3, '0')}`,
+        itemCode: '',
         itemName: '',
         tax: '',
-        sellingPrice: '',
+        sellingRate: '',
         mrp: '',
       });
     }
+    setError('');
     setShow(true);
   };
 
   const handleClose = () => {
     setShow(false);
     setEditingItem(null);
+    setError('');
   };
 
-  const handleSave = () => {
-    const newItem: Item = {
-      id: editingItem?.id || Date.now().toString(),
-      itemCode: formData.itemCode,
-      itemName: formData.itemName,
-      tax: parseFloat(formData.tax),
-      sellingPrice: parseFloat(formData.sellingPrice),
-      mrp: parseFloat(formData.mrp),
-    };
-
-    if (editingItem) {
-      setItems(items.map(item => item.id === editingItem.id ? newItem : item));
-    } else {
-      setItems([...items, newItem]);
+  const validateForm = () => {
+    if (!formData.itemCode || !formData.itemName || !formData.tax || !formData.sellingRate || !formData.mrp) {
+      setError('All fields are required');
+      return false;
     }
-    handleClose();
+
+    if (parseFloat(formData.tax) < 0 || parseFloat(formData.sellingRate) <= 0 || parseFloat(formData.mrp) <= 0) {
+      setError('Tax must be non-negative and prices must be positive');
+      return false;
+    }
+
+    return true;
   };
 
-  const handleDelete = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    setLoading(true);
+    try {
+      const itemData = {
+        itemCode: formData.itemCode,
+        itemName: formData.itemName,
+        tax: parseFloat(formData.tax),
+        sellingRate: parseFloat(formData.sellingRate),
+        mrp: parseFloat(formData.mrp),
+      };
+
+      if (editingItem) {
+        await veloraAPI.updateItem(editingItem.id, itemData);
+        toast.success('Item updated successfully');
+      } else {
+        await veloraAPI.createItem(itemData);
+        toast.success('Item created successfully');
+      }
+      
+      handleClose();
+      fetchItems();
+    } catch (error) {
+      toast.error('Operation failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      try {
+        await veloraAPI.deleteItem(id);
+        toast.success('Item deleted successfully');
+        fetchItems();
+      } catch (error) {
+        toast.error('Failed to delete item');
+      }
+    }
   };
 
   const filteredItems = items.filter(item =>
@@ -116,18 +171,20 @@ const ItemMaster: React.FC = () => {
                   <th>Item Code</th>
                   <th>Item Name</th>
                   <th>Tax (%)</th>
-                  <th>Selling Price</th>
+                  <th>Selling Rate</th>
                   <th>MRP</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredItems.map((item) => (
+                {loading ? (
+                  <tr><td colSpan={6} className="text-center">Loading...</td></tr>
+                ) : filteredItems.map((item) => (
                   <tr key={item.id}>
                     <td>{item.itemCode}</td>
                     <td>{item.itemName}</td>
                     <td>{item.tax}%</td>
-                    <td>₹{item.sellingPrice}</td>
+                    <td>₹{item.sellingRate}</td>
                     <td>₹{item.mrp}</td>
                     <td>
                       <Button size="sm" variant="primary" className="me-2" onClick={() => handleShow(item)}>
@@ -150,12 +207,14 @@ const ItemMaster: React.FC = () => {
           <Modal.Title>{editingItem ? 'Edit Item' : 'Add New Item'}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          {error && <Alert variant="danger">{error}</Alert>}
           <Form>
             <Row>
               <Col md={12} className="mb-3">
                 <Form.Label>Item Code</Form.Label>
                 <Form.Control
                   type="text"
+                  required
                   value={formData.itemCode}
                   onChange={(e) => setFormData({ ...formData, itemCode: e.target.value })}
                 />
@@ -164,6 +223,7 @@ const ItemMaster: React.FC = () => {
                 <Form.Label>Item Name</Form.Label>
                 <Form.Control
                   type="text"
+                  required
                   value={formData.itemName}
                   onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
                 />
@@ -172,22 +232,28 @@ const ItemMaster: React.FC = () => {
                 <Form.Label>Tax (%)</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
+                  required
                   value={formData.tax}
                   onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
                 />
               </Col>
               <Col md={12} className="mb-3">
-                <Form.Label>Selling Price</Form.Label>
+                <Form.Label>Selling Rate</Form.Label>
                 <Form.Control
                   type="number"
-                  value={formData.sellingPrice}
-                  onChange={(e) => setFormData({ ...formData, sellingPrice: e.target.value })}
+                  step="0.01"
+                  required
+                  value={formData.sellingRate}
+                  onChange={(e) => setFormData({ ...formData, sellingRate: e.target.value })}
                 />
               </Col>
               <Col md={12} className="mb-3">
                 <Form.Label>MRP</Form.Label>
                 <Form.Control
                   type="number"
+                  step="0.01"
+                  required
                   value={formData.mrp}
                   onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
                 />
@@ -199,8 +265,8 @@ const ItemMaster: React.FC = () => {
           <Button variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSave}>
-            {editingItem ? 'Update' : 'Save'}
+          <Button variant="primary" onClick={handleSave} disabled={loading}>
+            {loading ? 'Saving...' : editingItem ? 'Update' : 'Save'}
           </Button>
         </Modal.Footer>
       </Modal>
