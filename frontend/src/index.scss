@@ -1,0 +1,48 @@
+@forward "./assets/css/styles.css";
+@import "./assets/css/icons.css";
+
+@import "gridjs/dist/theme/mermaid.css";
+@import "simplebar-react/dist/simplebar.min.css";
+@import "filepond/dist/filepond.min.css";
+@import "filepond-plugin-image-preview/dist/filepond-plugin-image-preview.css";
+@import "suneditor/dist/css/suneditor.min.css";
+@import "leaflet/dist/leaflet.css";
+@import "react-range-slider-input/dist/style.css";
+@import "react-phone-number-input/style.css";
+@import "yet-another-react-lightbox/plugins/thumbnails.css";
+@import "yet-another-react-lightbox/styles.css";
+@import "shepherd.js/dist/css/shepherd.css";
+@import "react-country-state-city/dist/react-country-state-city.css";
+
+@import "flatpickr/dist/flatpickr.css";
+
+//simonwep colorpicker
+@import "@simonwep/pickr/dist/themes/classic.min.css";
+@import "@simonwep/pickr/dist/themes/monolith.min.css";
+@import "@simonwep/pickr/dist/themes/nano.min.css";
+
+.backimage {
+  background-image: url("./assets/images/2_afcas12.jpg");
+  background-size: cover;
+}
+
+.table-compact tbody tr td
+ {
+  padding: 4px 8px !important;
+  vertical-align: middle !important;
+}
+
+
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
