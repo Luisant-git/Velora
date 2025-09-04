@@ -1,50 +1,107 @@
-# React + TypeScript + Vite
+# Velora - Business Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern React-based business management system for handling sales, inventory, and customer management.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 🏠 Dashboard
+- Business overview with key metrics
+- Sales summary and statistics
+- Quick access to all modules
 
-## Expanding the ESLint configuration
+### 📋 Master Data Management
+- **Item Master**: Manage products with pricing, tax, and MRP
+- **Customer Master**: Customer database with contact information
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### 💼 Transaction Management
+- **Sales Entry**: Multi-item invoice creation with auto-calculations
+- Real-time price and tax calculations
+- Customer and item auto-fetch functionality
 
-- Configure the top-level `parserOptions` property like this:
+### 📊 Reports
+- **Sales Report**: Comprehensive sales analytics
+- Date range filtering
+- Customer and item-wise reporting
+- Export to PDF and Excel
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### 👥 User Management
+- User account creation and management
+- Active/Inactive user status
+- Role-based access control ready
+
+## Technology Stack
+
+- **Frontend**: React 18 + TypeScript
+- **UI Framework**: Material-UI (MUI)
+- **State Management**: Redux Toolkit
+- **Routing**: React Router DOM
+- **Authentication**: Firebase Auth
+- **Build Tool**: Vite
+
+## Getting Started
+
+### Prerequisites
+- Node.js 16+
+- npm or yarn
+
+### Installation
+```bash
+npm install
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+### Development
+```bash
+npm run dev
+# or
+npm start
 ```
+
+### Build
+```bash
+npm run build
+```
+
+## Project Structure
+
+```
+src/
+├── pages/velora/           # Main application pages
+│   ├── dashboard/          # Dashboard components
+│   ├── master/            # Master data components
+│   ├── transactions/      # Transaction components
+│   ├── reports/           # Report components
+│   └── users/             # User management
+├── components/            # Reusable components
+├── api/                   # API integration
+└── firebase/              # Authentication
+```
+
+## Key Features Implementation
+
+### Multi-Item Sales Entry
+- Dynamic item addition/removal
+- Auto-fetch item details by code
+- Real-time calculations (subtotal, tax, discount, total)
+- Customer auto-complete by phone
+
+### Master Data Validation
+- Duplicate prevention (phone, email)
+- Form validation with error messages
+- Search and filter functionality
+
+### Responsive Design
+- Mobile-friendly interface
+- Material-UI components
+- Consistent design system
+
+## Development Guidelines
+
+- Follow TypeScript best practices
+- Use Material-UI components consistently
+- Implement proper error handling
+- Add form validation for all inputs
+- Maintain responsive design principles
+
+## License
+
+Private - Velora Business Management System

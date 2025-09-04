@@ -254,7 +254,6 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
     const path = `${import.meta.env.BASE_URL}login`;
     navigate(path);
   };
-  const [decoded, setDecoded] = useState<CustomJwtPayload | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -262,15 +261,7 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
       setCurrentTime(new Date());
     }, 1000);
 
-    return () => clearInterval(intervalId); // Cleanup interval on component unmount
-  }, []);
-
-  useEffect(() => {
-    const user = localStorage.getItem("token");
-    if (user) {
-      const decodedToken = jwtDecode<CustomJwtPayload>(user);
-      setDecoded(decodedToken);
-    }
+    return () => clearInterval(intervalId);
   }, []);
 
   const formattedTime = currentTime.toLocaleTimeString([], {
@@ -293,31 +284,8 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
         style={{ height: "50px" }}
       >
         <div className="main-header-container container-fluid">
-          <div className="header-content-left">
-            <div className="header-element">
-              <div className="horizontal-logo">
-                <Link
-                  to={`${import.meta.env.BASE_URL}dashboard/sales`}
-                  className="header-logo"
-                >
-                  <img src={desktoplogo} alt="logo" className="desktop-logo" />
-                  <img
-                    src={toggledarklogo}
-                    alt="logo"
-                    className="toggle-dark"
-                  />
-                  <img src={desktopdark} alt="logo" className="desktop-dark" />
-                  <img src={togglelogo} alt="logo" className="toggle-logo" />
-                  <img src={togglewhite} alt="logo" className="toggle-white" />
-                  <img
-                    src={desktopwhite}
-                    alt="logo"
-                    className="desktop-white"
-                  />
-                </Link>
-              </div>
-            </div>
-            <div className="header-element mx-lg-0 mx-2">
+          <div className="header-content-left d-flex align-items-center">
+            <div className="header-element d-block d-lg-none me-2">
               <Link
                 aria-label="Hide Sidebar"
                 onClick={() => toggleSidebar()}
@@ -328,16 +296,34 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
                 <span></span>
               </Link>
             </div>
-            <li className="header-element text-start">
+            <div className="header-element">
+              <div className="horizontal-logo">
+                <Link
+                  to={`${import.meta.env.BASE_URL}dashboard`}
+                  className="header-logo"
+                >
+                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#2196f3' }}>Velora</span>
+                </Link>
+              </div>
+            </div>
+            <div className="header-element mx-lg-0 mx-2 d-none d-lg-block">
+              <Link
+                aria-label="Hide Sidebar"
+                onClick={() => toggleSidebar()}
+                className="sidemenu-toggle header-link animated-arrow hor-toggle horizontal-navtoggle"
+                data-bs-toggle="sidebar"
+                to="#!"
+              >
+                <span></span>
+              </Link>
+            </div>
+            <li className="header-element text-start d-none d-md-block">
               <div
                 className="header-link"
                 style={{
                   display: "flex",
                   alignItems: "start",
-
                   padding: "3px 15px",
-                  // borderRadius: "8px",
-                  // backgroundColor: "rgba(0, 0, 0, 0.05)",
                 }}
               >
                 <div
@@ -354,7 +340,7 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
                       color: "#333",
                     }}
                   >
-                    {decoded?.name}
+                    Admin User
                   </span>
                   <span
                     style={{
@@ -363,7 +349,7 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
                       marginTop: "4px",
                     }}
                   >
-                    {decoded?.concernName}
+                    Velora System
                   </span>
                 </div>
               </div>
@@ -416,15 +402,13 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
               </Link>
             </li> */}
 
-            <li className="header-element">
+            <li className="header-element d-none d-lg-block">
               <div
                 className="header-link"
                 style={{
                   display: "flex",
                   alignItems: "center",
                   padding: "3px 15px",
-                  // borderRadius: "8px",
-                  // backgroundColor: "rgba(0, 0, 0, 0.05)",
                 }}
               >
                 <div
@@ -456,7 +440,7 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
               </div>
             </li>
 
-            <li className="header-element header-fullscreen">
+            <li className="header-element header-fullscreen d-none d-sm-block">
               <Link to="#!" className="header-link" onClick={toggleFullscreen}>
                 {isFullscreen ? (
                   <svg

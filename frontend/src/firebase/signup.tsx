@@ -23,7 +23,7 @@ const [passwordshow1, setpasswordshow1] = useState(false);
                         <Card className="custom-card my-4">
                             <Card.Body className="p-5">
                                 <div className="mb-4 d-flex justify-content-center">
-                                    <Link to={`${import.meta.env.BASE_URL}dashboard/sales`}>
+                                    <Link to={`${import.meta.env.BASE_URL}dashboard`}>
                                         <img src={desktoplogo} alt="logo" className="desktop-logo" />
                                         <img src={desktopwhite}alt="logo" className="desktop-white" />
                                     </Link>
@@ -71,7 +71,7 @@ const [passwordshow1, setpasswordshow1] = useState(false);
                                     </Col>
                                 </div>
                                 <div className="d-grid mt-4">
-                                    <Link className="btn btn-primary" to={`${import.meta.env.BASE_URL}dashboard/sales`}>Create Account</Link>
+                                    <Link className="btn btn-primary" to={`${import.meta.env.BASE_URL}dashboard`}>Create Account</Link>
                                 </div>
                                 <div className="text-center">
                                     <p className="text-muted mt-3 mb-0">Already have an account? <Link to={`${import.meta.env.BASE_URL}authentication/sign-in/sign-in-basic`} className="text-primary">Sign In</Link></p>

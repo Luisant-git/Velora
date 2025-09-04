@@ -9,24 +9,13 @@ import RootWrapper from "./pages/Rootwrapper.tsx";
 import CenteredLoader from "./components/progress/Progress.tsx";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import PrinterQuoation from "./components/print/PrintQuoation.tsx";
-
-
-
 import { ThemeProvider } from "@mui/material";
 import theme from "./theme.ts";
 const App = lazy(() => import("./pages/App.tsx"));
-const Error401 = lazy(
-  () => import("./container/authentication/error/401-error/error401.tsx")
-);
-const Error404 = lazy(
-  () => import("./container/authentication/error/404-error/error404.tsx")
-);
-const Error500 = lazy(
-  () => import("./container/authentication/error/500-error/error-500.tsx")
-);
-const Landing = lazy(() => import("./container/pages/landing/landing.tsx"));
-const Landinglayout = lazy(() => import("./pages/landinglayout.tsx"));
+const Error401 = lazy(() => import("./pages/errors/Error401.tsx"));
+const Error404 = lazy(() => import("./pages/errors/Error404.tsx"));
+const Error500 = lazy(() => import("./pages/errors/Error500.tsx"));
+const Landing = lazy(() => import("./pages/Landing.tsx"));
 const Login = lazy(() => import("./firebase/login.tsx"));
 const PublicRoute = lazy(() => import("./firebase/PublicRoute.tsx"));
 const ProtectedRoute = lazy(() => import("./firebase/ProtectedRoute.tsx"));
@@ -58,23 +47,11 @@ createRoot(document.getElementById("root")!).render(
                   </Route>
                 </Route>
                 <Route element={<ProtectedRoute />}>
-                  <Route
-                    path={`authentication/error/401-error`}
-                    element={<Error401 />}
-                  />
-                  <Route
-                    path={`authentication/error/404-error`}
-                    element={<Error404 />}
-                  />
-                  <Route
-                    path={`authentication/error/500-error`}
-                    element={<Error500 />}
-                  />
-                  <Route path={`printer/:id`} element={<PrinterQuoation />} />
+                  <Route path={`error/401`} element={<Error401 />} />
+                  <Route path={`error/404`} element={<Error404 />} />
+                  <Route path={`error/500`} element={<Error500 />} />
                 </Route>
-                <Route element={<Landinglayout />}>
-                  <Route path={`pages/landing`} element={<Landing />} />
-                </Route>
+                <Route path={`landing`} element={<Landing />} />
               </Routes>
               <ToastContainer
                 position="top-right"

@@ -1,107 +1,27 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Card, Col, Form } from "react-bootstrap";
-import SpkAlert from "../@spk-reusable-components/reusable-uielements/spk-alert";
-import logo from "../assets/images/brand-logos/toggle-white.png";
-import { Concernlookup } from "../api/concern";
-import { getFinancialYears } from "../api/financial";
+import { Card, Col, Form, Alert } from "react-bootstrap";
 const Login = () => {
   const [passwordshow1, setpasswordshow1] = useState(false);
-  const [err, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  interface FinancialYear {
-    financialId: string | number | readonly string[] | undefined;
-    HeaderId: number;
-    YearId: string;
-  }
-
-  const [lookupFinancilaYear, setlookupFinancilaYear] = useState<
-    FinancialYear[]
-  >([]);
   const navigate = useNavigate();
-  interface Concern {
-    HeaderId: number;
-    Concern_Name: string;
-  }
-
-  const [lookUpData, setLookUpData] = useState<Concern[]>([]);
-  const [data, setData] = useState<{
-    emailOrName: string;
-    password: string;
-    concernId: number | null;
-    financialId: string | number | null;
-  }>({
-    emailOrName: "",
+  const [data, setData] = useState({
+    email: "",
     password: "",
-    concernId: null,
-    financialId: null,
   });
-  const { emailOrName, password } = data;
+  const { email, password } = data;
 
-  const changeHandler = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
+  const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setData({
-      ...data,
-      [name]:
-        name === "concernId" || name === "financialId"
-          ? parseInt(value)
-          : value,
-    });
-    setError("");
+    setData({ ...data, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_REACT_APP_API_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        }
-      );
-
-      const result = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem("token", result.access_token);
-
-        navigate("/dashboard/sales");
-        window.location.reload();
-      } else {
-        setError(result.message || "Invalid credentials");
-      }
-    } catch (error) {
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    localStorage.setItem("token", "demo-token");
+    navigate("/dashboard");
   };
 
-  const getconcernId = () => {
-    Concernlookup().then((res) => {
-      console.log(res.data);
-      setLookUpData(res.data);
-    });
 
-    getFinancialYears().then((res) => {
-      console.log(res.data);
-      setlookupFinancilaYear(res.data);
-    });
-  };
-  useEffect(() => {
-    getconcernId();
-  }, []);
 
   return (
     <div className="backimage">
@@ -110,9 +30,7 @@ const Login = () => {
           <div className="row justify-content-center align-items-center authentication authentication-basic h-100 pt-3">
             <Col xxl={4} xl={5} lg={5} md={6} sm={8} className="col-12">
               <div className="mb-3 d-flex justify-content-center">
-                <Link to="#">
-                  <img src={logo} alt="logo" className="" width={200} />
-                </Link>
+                <h2 style={{ color: '#2196f3', fontWeight: 'bold' }}>Velora</h2>
               </div>
               <Card className="custom-card my-4">
                 <Card.Body>
@@ -121,20 +39,17 @@ const Login = () => {
                     Welcome back!
                   </p>
                   <Form onSubmit={handleSubmit}>
-                    {err && <SpkAlert variant="danger">{err}</SpkAlert>}
+
                     <Col xl={12}>
-                      <Form.Label
-                        htmlFor="emailOrName"
-                        className="text-default"
-                      >
-                        user Name
+                      <Form.Label htmlFor="email" className="text-default">
+                        Email
                       </Form.Label>
                       <Form.Control
-                        type="text"
-                        name="emailOrName"
-                        id="emailOrName"
-                        placeholder="email"
-                        value={emailOrName}
+                        type="email"
+                        name="email"
+                        id="email"
+placeholder="Enter email"
+                        value={email}
                         onChange={changeHandler}
                         required
                       />
@@ -151,7 +66,7 @@ const Login = () => {
                           onChange={changeHandler}
                           className="create-password-input"
                           id="signin-password"
-                          placeholder="password"
+placeholder="Enter password"
                           required
                         />
                         <Link
@@ -167,74 +82,18 @@ const Login = () => {
                           ></i>
                         </Link>
                       </div>
-                 
-                      <Col xl={12} className="mt-3">
-                        <Form.Label
-                          htmlFor="financialId"
-                          className="text-default"
-                        >
-                          Financial Year
-                        </Form.Label>
-                        <Form.Control
-                          as="select"
-                          name="financialId"
-                          id="financialId"
-                          onChange={changeHandler}
-                          required
-                        >
-                          <option value="">Select Year</option>
-                          {lookupFinancilaYear.map((item) => (
-                            <option value={item.HeaderId} key={item.HeaderId}>
-                              {item.YearId}
-                            </option>
-                          ))}
-                        </Form.Control>
-                      </Col>
-                      <Col xl={12} className="mt-3">
-                        <Form.Label htmlFor=" Concern" className="text-default">
-                          Concern
-                        </Form.Label>
-                        <Form.Control
-                          as="select"
-                          name="concernId"
-                          id="concernId"
-                          onChange={changeHandler}
-                          required
-                        >
-                          <option value="">Select Concern </option>
 
-                          {lookUpData.map((item) => (
-                            <option value={item.HeaderId}>
-                              {item.Concern_Name}
-                            </option>
-                          ))}
-                        </Form.Control>
-                      </Col>
                     </div>
                     <div className="d-grid mt-4">
                       <button
                         type="submit"
                         className="btn btn-primary"
-                        disabled={loading}
-                      >
-                        {loading ? "Signing In..." : "Sign In"}
+>
+                        Sign In
                       </button>
                     </div>
                   </Form>
-                  {/* <div className="text-center">
-                    <p className="text-muted mt-3 mb-0">
-                      Don't have an account?
-                      <Link
-                        to={`${
-                          import.meta.env.BASE_URL
-                        }authentication/sign-up/sign-up-basic`}
-                        className="text-primary"
-                      >
-                        {" "}
-                        Sign Up
-                      </Link>
-                    </p>
-                  </div> */}
+
                 </Card.Body>
               </Card>
             </Col>

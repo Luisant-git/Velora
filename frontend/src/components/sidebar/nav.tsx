@@ -284,92 +284,14 @@ const NestedmenuIcon = (
   </svg>
 );
 export const MENUITEMS: any = [
-  // {
-  //   menutitle: "MAIN",
-  // },
-  // {
-  //   path: `${import.meta.env.BASE_URL}dashboard/sales`,
-  //   icon: Dashboardicon,
-  //   type: "link",
-  //   active: false,
-  //   selected: false,
-  //   title: "DashBoard",
-  // },
-
   {
-    menutitle: "DashBoard",
-  },
-  {
-    path: `dashboard/sales`,
+    path: `dashboard`,
     icon: Dashboardicon,
     type: "link",
     active: false,
     selected: false,
-    title: "DashBoard",
+    title: "Dashboard",
   },
-  {
-    menutitle: "Main",
-  },
-  // {
-  //   title: "Quotation",
-  //   icon: Utilitiesicon,
-  //   type: "sub",
-  //   active: false,
-  //   selected: false,
-  //   children: [
-  //     {
-  //       path: `${import.meta.env.BASE_URL}quotation`,
-  //       type: "link",
-  //       active: false,
-  //       selected: false,
-  //       title: "Quotation List",
-  //     },
-  //     {
-  //       path: `${import.meta.env.BASE_URL}party`,
-  //       type: "link",
-  //       active: false,
-  //       selected: false,
-  //       title: "Party List",
-  //     },
-  //     {
-  //       path: `${import.meta.env.BASE_URL}master/clothdec`,
-  //       type: "link",
-  //       active: false,
-  //       selected: false,
-  //       title: "Cloth Dec",
-  //     },
-  //     {
-  //       path: `${import.meta.env.BASE_URL}master/color`,
-  //       type: "link",
-  //       active: false,
-  //       selected: false,
-  //       title: "Color",
-  //     },
-  //     {
-  //       path: `${import.meta.env.BASE_URL}master/uom`,
-  //       type: "link",
-  //       active: false,
-  //       selected: false,
-  //       title: "UOM",
-  //     },
-  //     {
-  //       path: `${import.meta.env.BASE_URL}master/dia`,
-  //       type: "link",
-  //       active: false,
-  //       selected: false,
-  //       title: "DIA",
-  //     },
-  //   ],
-  // },
-  // {
-  //   path: `${import.meta.env.BASE_URL}item`,
-  //   icon: NestedmenuIcon,
-  //   type: "link",
-  //   active: false,
-  //   selected: false,
-  //   title: "Products",
-  // },
-
   {
     title: "Master",
     icon: Pagesicon,
@@ -377,83 +299,68 @@ export const MENUITEMS: any = [
     active: false,
     selected: false,
     children: [
-      // {
-      //   path: `${import.meta.env.BASE_URL}customer`,
-      //   type: "link",
-      //   active: false,
-      //   selected: false,
-      //   title: "Customer",
-      // },
       {
-        path: `${import.meta.env.BASE_URL}party`,
+        path: `item-master`,
         type: "link",
         active: false,
         selected: false,
-        title: "Party Creation",
+        title: "Item Master",
       },
       {
-        path: `${import.meta.env.BASE_URL}item`,
+        path: `customer-master`,
         type: "link",
         active: false,
         selected: false,
-        title: "Product Creation",
+        title: "Customer Master",
       },
-
-      // {
-      //   path: `${import.meta.env.BASE_URL}financial`,
-      //   type: "link",
-      //   active: false,
-      //   selected: false,
-      //   title: "Financial Year",
-      // },
-      // {
-      //   path: `${import.meta.env.BASE_URL}concern`,
-      //   type: "link",
-      //   active: false,
-      //   selected: false,
-      //   title: "Concern Master",
-      // },
-
-      
     ],
   },
   {
-    title: "Transaction",
+    title: "Transactions",
     icon: Elementsicon,
     type: "sub",
     active: false,
     selected: false,
     children: [
-      // {
-      //   path: `${import.meta.env.BASE_URL}item`,
-      //   type: "link",
-      //   active: false,
-      //   selected: false,
-      //   title: "Sales Items",
-      // },
-      
       {
-        path: `${import.meta.env.BASE_URL}purchase-entries`,
+        path: `sales-entry`,
         type: "link",
         active: false,
         selected: false,
-        title: "Purchase",
-      },{
-        path: `${import.meta.env.BASE_URL}sale-entries`,
-        type: "link",
-        active: false,
-        selected: false,
-        title: "Sales",
+        title: "Sales Entry",
       },
     ],
   },
-
-  // {
-  //   path: `${import.meta.env.BASE_URL}trash-bin`,
-  //   icon: TrashBinIcon,
-  //   type: "link",
-  //   active: false,
-  //   selected: false,
-  //   title: "Trash Bin",
-  // },
+  {
+    title: "Reports",
+    icon: Chartsicon,
+    type: "sub",
+    active: false,
+    selected: false,
+    children: [
+      {
+        path: `sales-report`,
+        type: "link",
+        active: false,
+        selected: false,
+        title: "Sales Report",
+      },
+    ],
+  },
+  {
+    title: "Users",
+    icon: Authenticationicon,
+    type: "sub",
+    active: false,
+    selected: false,
+    children: [
+      {
+        path: `user-management`,
+        type: "link",
+        active: false,
+        selected: false,
+        title: "User Management",
+      },
+    ],
+  },
   ];

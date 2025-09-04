@@ -635,13 +635,8 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 			<aside className='app-sidebar sticky' onMouseOver={() => Onhover()}
 				onMouseLeave={() => Outhover()}>
 				<div className="main-sidebar-header">
-					<Link to={`${import.meta.env.BASE_URL}dashboard/sales`} className="header-logo">
-						<img src={logo1} alt="logo" className="desktop-logo" />
-						<img src={logo4} alt="logo" className="toggle-dark" />
-						<img src={logo3} alt="logo" className="desktop-dark" />
-						<img src={logo2} alt="logo" className="toggle-logo" />
-						<img src={logo6} alt="logo" className="toggle-white" />
-						<img src={logo5} alt="logo" className="desktop-white" />
+					<Link to={`${import.meta.env.BASE_URL}dashboard`} className="header-logo">
+						<span style={{ fontSize: '24px', fontWeight: 'bold', color: '#2196f3' }}>Velora</span>
 					</Link>
 				</div>
 				<SimpleBar className='main-sidebar' id="sidebar-scroll">
