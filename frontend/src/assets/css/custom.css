@@ -1,0 +1,9 @@
+/* Header fullscreen button alignment fix */
+.header-element.header-fullscreen .header-link {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.5rem !important;
+  margin-top: 0 !important;
+  vertical-align: middle !important;
+}

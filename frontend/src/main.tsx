@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.scss";
+import "./assets/css/custom.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Routedata } from "./components/common/ui/routingdata.tsx";
 import { Provider } from "react-redux";
