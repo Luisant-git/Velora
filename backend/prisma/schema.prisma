@@ -27,9 +27,9 @@ model Company {
   name        String
   password    String
   isActive    Boolean  @default(true)
-  dbName      String   @unique            // Database name for multi-tenancy
-  resetToken  String?                     // Password reset token
-  resetTokenExpiry DateTime?              // Token expiry time
+  dbName      String   @unique           
+  resetToken  String?                     
+  resetTokenExpiry DateTime?              
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
