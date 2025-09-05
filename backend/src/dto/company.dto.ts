@@ -25,6 +25,10 @@ export class CreateItemDto {
   @IsNumber()
   tax: number;
 
+  @ApiProperty({ example: 80.0 })
+  @IsNumber()
+  purchaseRate: number;
+
   @ApiProperty({ example: 100.0 })
   @IsNumber()
   sellingRate: number;
@@ -32,6 +36,21 @@ export class CreateItemDto {
   @ApiProperty({ example: 120.0 })
   @IsNumber()
   mrp: number;
+
+  @ApiProperty({ example: 'category_id_here', required: false })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiProperty({ example: 'tax_id_here', required: false })
+  @IsOptional()
+  @IsString()
+  taxId?: string;
+
+  @ApiProperty({ example: 'unit_id_here', required: false })
+  @IsOptional()
+  @IsString()
+  unitId?: string;
 }
 
 export class UpdateItemDto {
@@ -50,6 +69,11 @@ export class UpdateItemDto {
   @IsNumber()
   tax?: number;
 
+  @ApiProperty({ example: 85.0, required: false })
+  @IsOptional()
+  @IsNumber()
+  purchaseRate?: number;
+
   @ApiProperty({ example: 110.0, required: false })
   @IsOptional()
   @IsNumber()
@@ -59,6 +83,21 @@ export class UpdateItemDto {
   @IsOptional()
   @IsNumber()
   mrp?: number;
+
+  @ApiProperty({ example: 'category_id_here', required: false })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiProperty({ example: 'tax_id_here', required: false })
+  @IsOptional()
+  @IsString()
+  taxId?: string;
+
+  @ApiProperty({ example: 'unit_id_here', required: false })
+  @IsOptional()
+  @IsString()
+  unitId?: string;
 }
 
 export class CreateCustomerDto {
@@ -101,6 +140,10 @@ export class SaleItemDto {
   @ApiProperty({ example: 2 })
   @IsNumber()
   quantity: number;
+
+  @ApiProperty({ example: 10.0 })
+  @IsNumber()
+  discount?: number;
 }
 
 export class CreateSaleDto {
@@ -114,12 +157,46 @@ export class CreateSaleDto {
   @Type(() => SaleItemDto)
   items: SaleItemDto[];
 
-  @ApiProperty({ example: 10.0, required: false })
-  @IsOptional()
-  @IsNumber()
-  discount?: number;
-
   @ApiProperty({ example: 200.0 })
   @IsNumber()
   totalAmount: number;
+}
+
+export class CreateCategoryDto {
+  @ApiProperty({ example: 'Electronics' })
+  @IsString()
+  name: string;
+}
+
+export class UpdateCategoryDto {
+  @ApiProperty({ example: 'Updated Electronics', required: false })
+  @IsOptional()
+  @IsString()
+  name?: string;
+}
+
+export class CreateTaxDto {
+  @ApiProperty({ example: 18.0 })
+  @IsNumber()
+  rate: number;
+}
+
+export class UpdateTaxDto {
+  @ApiProperty({ example: 20.0, required: false })
+  @IsOptional()
+  @IsNumber()
+  rate?: number;
+}
+
+export class CreateUnitDto {
+  @ApiProperty({ example: 'Pcs' })
+  @IsString()
+  symbol: string;
+}
+
+export class UpdateUnitDto {
+  @ApiProperty({ example: 'Updated Pcs', required: false })
+  @IsOptional()
+  @IsString()
+  symbol?: string;
 }

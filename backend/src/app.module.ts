@@ -6,6 +6,9 @@ import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
 import { AdminController } from './controllers/admin.controller';
 import { CompanyController } from './controllers/company.controller';
+import { MigrationController } from './controllers/migration.controller';
+import { DashboardController } from './controllers/dashboard.controller';
+import { EmailService } from './services/email.service';
 import { JwtStrategy } from './auth/jwt.strategy';
 
 @Module({
@@ -16,7 +19,7 @@ import { JwtStrategy } from './auth/jwt.strategy';
       signOptions: { expiresIn: '24h' },
     }),
   ],
-  controllers: [AppController, AdminController, CompanyController],
-  providers: [AppService, PrismaService, JwtStrategy],
+  controllers: [AppController, AdminController, CompanyController, MigrationController, DashboardController],
+  providers: [AppService, PrismaService, JwtStrategy, EmailService],
 })
 export class AppModule {}

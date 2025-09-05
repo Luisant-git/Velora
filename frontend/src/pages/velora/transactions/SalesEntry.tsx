@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Button, Form, Modal, Table } from 'react-bootstrap';
 import { toast } from 'react-toastify';
-import { veloraAPI } from '../../../api/velora';
+import { veloraAPI, APISale } from '../../../api/velora';
 import SalesTable from './SalesTable';
 
 interface Item {
@@ -9,6 +9,7 @@ interface Item {
   itemCode: string;
   itemName: string;
   tax: number;
+  purchaseRate: number;
   sellingRate: number;
   mrp: number;
 }
@@ -43,28 +44,7 @@ interface Sale {
   grandTotal: number;
 }
 
-interface APISale {
-  id: string;
-  totalAmount: number;
-  discount: number;
-  createdAt: string;
-  customer: {
-    id: string;
-    name: string;
-    phone: string;
-  };
-  saleItems: {
-    id: string;
-    quantity: number;
-    item: {
-      id: string;
-      itemCode: string;
-      itemName: string;
-      sellingRate: number;
-      tax: number;
-    };
-  }[];
-}
+
 
 const SalesEntry: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
@@ -184,14 +164,18 @@ const SalesEntry: React.FC = () => {
   };
 
   const calculateTotals = () => {
-    const subtotal = saleItems.reduce((sum, item) => sum + (item.quantity * item.sellingPrice), 0);
-    const totalDiscount = saleItems.reduce((sum, item) => sum + ((item.quantity * item.sellingPrice * item.discount) / 100), 0);
+    if (!saleItems.length) {
+      return { subtotal: 0, totalTax: 0, grandTotal: 0 };
+    }
+    
+    const subtotal = saleItems.reduce((sum, item) => sum + ((item.quantity || 0) * (item.sellingPrice || 0)), 0);
+    const totalDiscount = saleItems.reduce((sum, item) => sum + (((item.quantity || 0) * (item.sellingPrice || 0) * (item.discount || 0)) / 100), 0);
     const taxableAmount = subtotal - totalDiscount;
     const totalTax = saleItems.reduce((sum, item) => {
-      const itemSubtotal = item.quantity * item.sellingPrice;
-      const itemDiscount = (itemSubtotal * item.discount) / 100;
+      const itemSubtotal = (item.quantity || 0) * (item.sellingPrice || 0);
+      const itemDiscount = (itemSubtotal * (item.discount || 0)) / 100;
       const itemTaxable = itemSubtotal - itemDiscount;
-      return sum + ((itemTaxable * item.tax) / 100);
+      return sum + ((itemTaxable * (item.tax || 0)) / 100);
     }, 0);
     const grandTotal = taxableAmount + totalTax;
 
@@ -216,11 +200,11 @@ const SalesEntry: React.FC = () => {
           }
           return {
             itemId: foundItem.id,
-            quantity: Number(item.quantity)
+            quantity: Number(item.quantity),
+            discount: Number(item.discount)
           };
         }),
-        discount: 0,
-        totalAmount: Number(totals.grandTotal.toFixed(2))
+        totalAmount: Number((totals.grandTotal || 0).toFixed(2))
       };
 
       console.log('Sale Data:', JSON.stringify(saleData, null, 2));

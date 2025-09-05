@@ -7,7 +7,7 @@ import Settings from './pages/Settings'
 import Login from './pages/Login'
 
 function App() {
-  const isAuthenticated = localStorage.getItem('authToken');
+  const isAuthenticated = localStorage.getItem('adminToken');
 
   if (!isAuthenticated) {
     return (

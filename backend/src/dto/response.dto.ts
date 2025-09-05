@@ -78,9 +78,6 @@ export class SaleResponseDto {
   @ApiProperty({ example: 200.0 })
   totalAmount: number;
 
-  @ApiProperty({ example: 10.0 })
-  discount: number;
-
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: string;
 
@@ -94,6 +91,7 @@ export class SaleResponseDto {
       properties: {
         id: { type: 'string', example: 'sale_item_id' },
         quantity: { type: 'number', example: 2 },
+        discount: { type: 'number', example: 10.0 },
         item: { $ref: '#/components/schemas/ItemResponseDto' }
       }
     }

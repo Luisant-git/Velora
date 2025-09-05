@@ -1,37 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, Button, Form, Modal, Table, Badge, Alert, Row, Col } from 'react-bootstrap'
-
-interface Company {
-  id: string
-  email: string
-  name: string
-  password: string
-  isActive: boolean
-  dbName: string
-  createdDate: string
-}
+import { adminService, Company, CompanyData } from '../api/admin'
+import { toast } from 'react-toastify'
 
 const CompanyMaster: React.FC = () => {
-  const [companies, setCompanies] = useState<Company[]>([
-    {
-      id: '1',
-      email: 'admin@abccorp.com',
-      name: 'ABC Corporation',
-      password: '********',
-      isActive: true,
-      dbName: 'velora_abc_corp',
-      createdDate: '2024-01-01',
-    },
-    {
-      id: '2',
-      email: 'admin@xyzltd.com',
-      name: 'XYZ Limited',
-      password: '********',
-      isActive: false,
-      dbName: 'velora_xyz_ltd',
-      createdDate: '2024-01-10',
-    },
-  ])
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [loading, setLoading] = useState(false)
   const [show, setShow] = useState(false)
   const [editingCompany, setEditingCompany] = useState<Company | null>(null)
   const [error, setError] = useState('')
@@ -44,6 +18,22 @@ const CompanyMaster: React.FC = () => {
     dbName: '',
   })
 
+  useEffect(() => {
+    fetchCompanies()
+  }, [])
+
+  const fetchCompanies = async () => {
+    setLoading(true)
+    try {
+      const data = await adminService.getCompanies()
+      setCompanies(data)
+    } catch (error) {
+      toast.error('Failed to fetch companies')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleShow = (company?: Company) => {
     if (company) {
       setEditingCompany(company)
@@ -53,7 +43,7 @@ const CompanyMaster: React.FC = () => {
         password: '',
         confirmPassword: '',
         isActive: company.isActive,
-        dbName: company.dbName,
+        dbName: '',
       })
     } else {
       setEditingCompany(null)
@@ -76,40 +66,59 @@ const CompanyMaster: React.FC = () => {
     setError('')
   }
 
-  const handleSave = () => {
-    if (!formData.email || !formData.name || !formData.dbName) {
-      setError('Email, Name, and DB Name are required')
+  const handleSave = async () => {
+    if (!formData.email || !formData.name || (!editingCompany && !formData.password)) {
+      setError('Email, Name, and Password are required')
       return
     }
 
-    const newCompany: Company = {
-      id: editingCompany?.id || Date.now().toString(),
-      email: formData.email,
-      name: formData.name,
-      password: '********',
-      isActive: formData.isActive,
-      dbName: formData.dbName,
-      createdDate: editingCompany?.createdDate || new Date().toISOString().split('T')[0],
-    }
+    setLoading(true)
+    try {
+      const companyData: CompanyData = {
+        email: formData.email,
+        name: formData.name,
+        password: formData.password,
+        isActive: formData.isActive,
+      }
 
-    if (editingCompany) {
-      setCompanies(companies.map(company => company.id === editingCompany.id ? newCompany : company))
-    } else {
-      setCompanies([...companies, newCompany])
+      if (editingCompany) {
+        await adminService.updateCompany(editingCompany.id, companyData)
+        toast.success('Company updated successfully')
+      } else {
+        await adminService.createCompany(companyData)
+        toast.success('Company created successfully')
+      }
+      
+      fetchCompanies()
+      handleClose()
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Operation failed')
+      toast.error('Operation failed')
+    } finally {
+      setLoading(false)
     }
-    handleClose()
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this company?')) {
-      setCompanies(companies.filter(company => company.id !== id))
+      try {
+        await adminService.deleteCompany(id)
+        toast.success('Company deleted successfully')
+        fetchCompanies()
+      } catch (error) {
+        toast.error('Failed to delete company')
+      }
     }
   }
 
-  const handleToggleActive = (id: string) => {
-    setCompanies(companies.map(company => 
-      company.id === id ? { ...company, isActive: !company.isActive } : company
-    ))
+  const handleToggleActive = async (id: string) => {
+    try {
+      await adminService.toggleCompanyStatus(id)
+      toast.success('Company status updated')
+      fetchCompanies()
+    } catch (error) {
+      toast.error('Failed to update company status')
+    }
   }
 
   return (
@@ -152,7 +161,7 @@ const CompanyMaster: React.FC = () => {
                           {company.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </td>
-                      <td>{company.createdDate}</td>
+                      <td>{new Date(company.createdAt).toLocaleDateString()}</td>
                       <td>
                         <Form.Check
                           type="switch"
@@ -201,20 +210,12 @@ const CompanyMaster: React.FC = () => {
                 />
               </Col>
               <Col md={12} className="mb-3">
-                <Form.Label>Database Name</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.dbName}
-                  onChange={(e) => setFormData({ ...formData, dbName: e.target.value })}
-                  placeholder="velora_company_name"
-                />
-              </Col>
-              <Col md={12} className="mb-3">
-                <Form.Label>Password</Form.Label>
+                <Form.Label>Password {editingCompany ? '(leave blank to keep current)' : '*'}</Form.Label>
                 <Form.Control
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required={!editingCompany}
                 />
               </Col>
               <Col md={12} className="mb-3">
@@ -232,8 +233,8 @@ const CompanyMaster: React.FC = () => {
           <Button variant="secondary" onClick={handleClose}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={handleSave}>
-            {editingCompany ? 'Update' : 'Create'}
+          <Button variant="primary" onClick={handleSave} disabled={loading}>
+            {loading ? 'Saving...' : editingCompany ? 'Update' : 'Create'}
           </Button>
         </Modal.Footer>
       </Modal>

@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Button, Form, Table, Badge } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { veloraAPI } from '../../../api/velora';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface Sale {
   id: string;
   totalAmount: number;
-  discount: number;
   createdAt: string;
   customer: {
     id: string;
@@ -17,6 +19,7 @@ interface Sale {
   saleItems: {
     id: string;
     quantity: number;
+    discount: number;
     item: {
       id: string;
       itemCode: string;
@@ -55,6 +58,8 @@ const SalesReport: React.FC = () => {
     const flattened: any[] = [];
     sales.forEach(sale => {
       sale.saleItems.forEach(saleItem => {
+        const subtotal = saleItem.item.sellingRate * saleItem.quantity;
+        const discountAmount = (subtotal * (saleItem.discount || 0)) / 100;
         flattened.push({
           saleId: sale.id,
           date: new Date(sale.createdAt).toLocaleDateString(),
@@ -63,9 +68,9 @@ const SalesReport: React.FC = () => {
           itemCode: saleItem.item.itemCode,
           itemName: saleItem.item.itemName,
           quantity: saleItem.quantity,
-          amount: saleItem.item.sellingRate * saleItem.quantity,
+          amount: subtotal,
           total: sale.totalAmount,
-          discount: sale.discount
+          discount: discountAmount
         });
       });
     });
@@ -116,7 +121,12 @@ const SalesReport: React.FC = () => {
 
   const calculateSummary = () => {
     const totalSales = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-    const totalDiscount = sales.reduce((sum, sale) => sum + sale.discount, 0);
+    const totalDiscount = sales.reduce((sum, sale) => 
+      sum + sale.saleItems.reduce((itemSum, item) => {
+        const subtotal = item.item.sellingRate * item.quantity;
+        return itemSum + (subtotal * (item.discount || 0)) / 100;
+      }, 0), 0
+    );
     const totalCustomers = new Set(sales.map(sale => sale.customer.id)).size;
     const totalItems = sales.reduce((sum, sale) => sum + sale.saleItems.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
 
@@ -126,13 +136,77 @@ const SalesReport: React.FC = () => {
   const summary = calculateSummary();
 
   const handleExportPDF = () => {
-    // Mock PDF export
-    alert('PDF export functionality would be implemented here');
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text('Sales Report', 14, 22);
+    
+    // Add summary
+    doc.setFontSize(12);
+    doc.text(`Total Sales: ₹${summary.totalSales.toFixed(2)}`, 14, 35);
+    doc.text(`Total Discount: ₹${summary.totalDiscount.toFixed(2)}`, 14, 42);
+    doc.text(`Total Customers: ${summary.totalCustomers}`, 14, 49);
+    doc.text(`Items Sold: ${summary.totalItems}`, 14, 56);
+    
+    // Prepare table data
+    const tableData = filteredData.map(row => [
+      row.saleId.slice(-6),
+      row.date,
+      row.customerName,
+      row.customerPhone,
+      row.itemCode,
+      row.itemName,
+      row.quantity,
+      `₹${row.amount.toFixed(2)}`,
+      `₹${row.discount.toFixed(2)}`,
+      `₹${row.total.toFixed(2)}`
+    ]);
+    
+    // Add table
+    autoTable(doc, {
+      head: [['Invoice', 'Date', 'Customer', 'Phone', 'Item Code', 'Item Name', 'Qty', 'Amount', 'Discount', 'Total']],
+      body: tableData,
+      startY: 65,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] }
+    });
+    
+    doc.save('sales-report.pdf');
+    toast.success('PDF exported successfully');
   };
 
   const handleExportExcel = () => {
-    // Mock Excel export
-    alert('Excel export functionality would be implemented here');
+    const worksheetData = [
+      ['Sales Report'],
+      [],
+      ['Summary'],
+      [`Total Sales: ₹${summary.totalSales.toFixed(2)}`],
+      [`Total Discount: ₹${summary.totalDiscount.toFixed(2)}`],
+      [`Total Customers: ${summary.totalCustomers}`],
+      [`Items Sold: ${summary.totalItems}`],
+      [],
+      ['Invoice No', 'Date', 'Customer', 'Phone', 'Item Code', 'Item Name', 'Quantity', 'Amount', 'Discount', 'Total'],
+      ...filteredData.map(row => [
+        row.saleId.slice(-6),
+        row.date,
+        row.customerName,
+        row.customerPhone,
+        row.itemCode,
+        row.itemName,
+        row.quantity,
+        row.amount,
+        row.discount,
+        row.total
+      ])
+    ];
+    
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Sales Report');
+    
+    XLSX.writeFile(workbook, 'sales-report.xlsx');
+    toast.success('Excel file exported successfully');
   };
 
   return (
@@ -267,10 +341,10 @@ const SalesReport: React.FC = () => {
                     <td>{row.itemCode}</td>
                     <td>{row.itemName}</td>
                     <td>{row.quantity}</td>
-                    <td>₹{row.amount.toFixed(2)}</td>
-                    <td>₹{row.discount.toFixed(2)}</td>
+                    <td>₹{(row.amount || 0).toFixed(2)}</td>
+                    <td>₹{(row.discount || 0).toFixed(2)}</td>
                     <td>
-                      <strong>₹{row.total.toFixed(2)}</strong>
+                      <strong>₹{(row.total || 0).toFixed(2)}</strong>
                     </td>
                   </tr>
                 ))}

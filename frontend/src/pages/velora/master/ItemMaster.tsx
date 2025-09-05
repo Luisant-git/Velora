@@ -8,14 +8,39 @@ interface Item {
   itemCode: string;
   itemName: string;
   tax: number;
+  purchaseRate: number;
   sellingRate: number;
   mrp: number;
+  categoryId?: string;
+  taxId?: string;
+  unitId?: string;
+  category?: { id: string; name: string };
+  taxMaster?: { id: string; rate: number };
+  unit?: { id: string; symbol: string };
   createdAt: string;
   updatedAt: string;
 }
 
+interface Category {
+  id: string;
+  name: string;
+}
+
+interface Tax {
+  id: string;
+  rate: number;
+}
+
+interface Unit {
+  id: string;
+  symbol: string;
+}
+
 const ItemMaster: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [taxes, setTaxes] = useState<Tax[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [show, setShow] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,13 +49,17 @@ const ItemMaster: React.FC = () => {
   const [formData, setFormData] = useState({
     itemCode: '',
     itemName: '',
-    tax: '',
+    purchaseRate: '',
     sellingRate: '',
     mrp: '',
+    categoryId: '',
+    taxId: '',
+    unitId: '',
   });
 
   useEffect(() => {
     fetchItems();
+    fetchMasterData();
   }, []);
 
   const fetchItems = async () => {
@@ -45,24 +74,45 @@ const ItemMaster: React.FC = () => {
     }
   };
 
+  const fetchMasterData = async () => {
+    try {
+      const [categoriesData, taxesData, unitsData] = await Promise.all([
+        veloraAPI.getCategories(),
+        veloraAPI.getTaxes(),
+        veloraAPI.getUnits()
+      ]);
+      setCategories(categoriesData);
+      setTaxes(taxesData);
+      setUnits(unitsData);
+    } catch (error) {
+      toast.error('Failed to fetch master data');
+    }
+  };
+
   const handleShow = (item?: Item) => {
     if (item) {
       setEditingItem(item);
       setFormData({
         itemCode: item.itemCode,
         itemName: item.itemName,
-        tax: item.tax.toString(),
+        purchaseRate: item.purchaseRate.toString(),
         sellingRate: item.sellingRate.toString(),
         mrp: item.mrp.toString(),
+        categoryId: item.categoryId || '',
+        taxId: item.taxId || '',
+        unitId: item.unitId || '',
       });
     } else {
       setEditingItem(null);
       setFormData({
         itemCode: '',
         itemName: '',
-        tax: '',
+        purchaseRate: '',
         sellingRate: '',
         mrp: '',
+        categoryId: '',
+        taxId: '',
+        unitId: '',
       });
     }
     setError('');
@@ -76,13 +126,13 @@ const ItemMaster: React.FC = () => {
   };
 
   const validateForm = () => {
-    if (!formData.itemCode || !formData.itemName || !formData.tax || !formData.sellingRate || !formData.mrp) {
-      setError('All fields are required');
+    if (!formData.itemCode || !formData.itemName || !formData.purchaseRate || !formData.sellingRate || !formData.mrp || !formData.taxId) {
+      setError('All fields including tax selection are required');
       return false;
     }
 
-    if (parseFloat(formData.tax) < 0 || parseFloat(formData.sellingRate) <= 0 || parseFloat(formData.mrp) <= 0) {
-      setError('Tax must be non-negative and prices must be positive');
+    if (parseFloat(formData.purchaseRate) <= 0 || parseFloat(formData.sellingRate) <= 0 || parseFloat(formData.mrp) <= 0) {
+      setError('Prices must be positive');
       return false;
     }
 
@@ -94,12 +144,17 @@ const ItemMaster: React.FC = () => {
 
     setLoading(true);
     try {
+      const selectedTax = taxes.find(t => t.id === formData.taxId);
       const itemData = {
         itemCode: formData.itemCode,
         itemName: formData.itemName,
-        tax: parseFloat(formData.tax),
+        tax: selectedTax?.rate || 0,
+        purchaseRate: parseFloat(formData.purchaseRate),
         sellingRate: parseFloat(formData.sellingRate),
         mrp: parseFloat(formData.mrp),
+        categoryId: formData.categoryId || undefined,
+        taxId: formData.taxId,
+        unitId: formData.unitId || undefined,
       };
 
       if (editingItem) {
@@ -170,7 +225,10 @@ const ItemMaster: React.FC = () => {
                 <tr>
                   <th>Item Code</th>
                   <th>Item Name</th>
-                  <th>Tax (%)</th>
+                  <th>Category</th>
+                  <th>Tax</th>
+                  <th>Unit</th>
+                  <th>Purchase Rate</th>
                   <th>Selling Rate</th>
                   <th>MRP</th>
                   <th>Actions</th>
@@ -178,12 +236,15 @@ const ItemMaster: React.FC = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} className="text-center">Loading...</td></tr>
+                  <tr><td colSpan={9} className="text-center">Loading...</td></tr>
                 ) : filteredItems.map((item) => (
                   <tr key={item.id}>
                     <td>{item.itemCode}</td>
                     <td>{item.itemName}</td>
-                    <td>{item.tax}%</td>
+                    <td>{item.category?.name || '-'}</td>
+                    <td>{item.taxMaster?.rate ? `${item.taxMaster.rate}%` : `${item.tax}%`}</td>
+                    <td>{item.unit?.symbol || '-'}</td>
+                    <td>₹{item.purchaseRate || 0}</td>
                     <td>₹{item.sellingRate}</td>
                     <td>₹{item.mrp}</td>
                     <td>
@@ -228,17 +289,60 @@ const ItemMaster: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, itemName: e.target.value })}
                 />
               </Col>
-              <Col md={12} className="mb-3">
-                <Form.Label>Tax (%)</Form.Label>
+              <Col md={6} className="mb-3">
+                <Form.Label>Category</Form.Label>
+                <Form.Select
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Unit</Form.Label>
+                <Form.Select
+                  value={formData.unitId}
+                  onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
+                >
+                  <option value="">Select Unit</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.symbol}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Tax Master *</Form.Label>
+                <Form.Select
+                  value={formData.taxId}
+                  onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
+                  required
+                >
+                  <option value="">Select Tax</option>
+                  {taxes.map((tax) => (
+                    <option key={tax.id} value={tax.id}>
+                      {tax.rate}%
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Purchase Rate</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
                   required
-                  value={formData.tax}
-                  onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
+                  value={formData.purchaseRate}
+                  onChange={(e) => setFormData({ ...formData, purchaseRate: e.target.value })}
                 />
               </Col>
-              <Col md={12} className="mb-3">
+              <Col md={6} className="mb-3">
                 <Form.Label>Selling Rate</Form.Label>
                 <Form.Control
                   type="number"

@@ -1,33 +1,9 @@
 import React, { useState } from 'react';
 import { Table, Button, Collapse } from 'react-bootstrap';
-
-interface SaleItem {
-  id: string;
-  quantity: number;
-  item: {
-    id: string;
-    itemCode: string;
-    itemName: string;
-    sellingRate: number;
-    tax: number;
-  };
-}
-
-interface Sale {
-  id: string;
-  totalAmount: number;
-  discount: number;
-  createdAt: string;
-  customer: {
-    id: string;
-    name: string;
-    phone: string;
-  };
-  saleItems: SaleItem[];
-}
+import { APISale } from '../../../api/velora';
 
 interface SalesTableProps {
-  sales: Sale[];
+  sales: APISale[];
   onDownloadInvoice: (saleId: string) => void;
 }
 
@@ -96,7 +72,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales, onDownloadInvoice }) => 
                 <td>
                   <span className="badge bg-primary">{sale.saleItems.length}</span>
                 </td>
-                <td>₹{sale.totalAmount.toFixed(2)}</td>
+                <td>₹{(sale.totalAmount || 0).toFixed(2)}</td>
                 <td>
                   <Button
                     size="sm"
@@ -121,24 +97,28 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales, onDownloadInvoice }) => 
                               <th>Item Name</th>
                               <th>Quantity</th>
                               <th>Rate</th>
+                              <th>Discount %</th>
                               <th>Tax %</th>
                               <th>Amount</th>
                             </tr>
                           </thead>
                           <tbody>
                             {sale.saleItems.map((item) => {
-                              const amount = item.quantity * item.item.sellingRate;
-                              const taxAmount = (amount * item.item.tax) / 100;
-                              const total = amount + taxAmount;
+                              const subtotal = item.quantity * item.item.sellingRate;
+                              const discountAmount = (subtotal * (item.discount || 0)) / 100;
+                              const taxableAmount = subtotal - discountAmount;
+                              const taxAmount = (taxableAmount * item.item.tax) / 100;
+                              const total = taxableAmount + taxAmount;
                               
                               return (
                                 <tr key={item.id}>
                                   <td>{item.item.itemCode}</td>
                                   <td>{item.item.itemName}</td>
                                   <td>{item.quantity}</td>
-                                  <td>₹{item.item.sellingRate.toFixed(2)}</td>
+                                  <td>₹{(item.item.sellingRate || 0).toFixed(2)}</td>
+                                  <td>{(item.discount || 0)}%</td>
                                   <td>{item.item.tax}%</td>
-                                  <td>₹{total.toFixed(2)}</td>
+                                  <td>₹{(total || 0).toFixed(2)}</td>
                                 </tr>
                               );
                             })}
@@ -146,8 +126,7 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales, onDownloadInvoice }) => 
                         </Table>
                         <div className="text-end mt-2">
                           <small className="text-muted">
-                            Discount: ₹{sale.discount.toFixed(2)} | 
-                            Total: ₹{sale.totalAmount.toFixed(2)}
+                            Total: ₹{(sale.totalAmount || 0).toFixed(2)}
                           </small>
                         </div>
                       </div>

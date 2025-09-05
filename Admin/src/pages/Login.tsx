@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Form, Button, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import { adminService } from '../api/admin';
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -17,15 +18,18 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      if (formData.email === 'admin@velora.com' && formData.password === 'admin123') {
-        localStorage.setItem('userRole', 'admin');
-        localStorage.setItem('authToken', 'admin-token-123');
-        window.location.reload();
-      } else {
-        setError('Invalid email or password');
-      }
-    } catch (err) {
-      setError('Login failed. Please try again.');
+      const response = await adminService.login({
+        email: formData.email,
+        password: formData.password
+      });
+      
+      localStorage.setItem('adminToken', response.access_token);
+      localStorage.setItem('adminData', JSON.stringify(response.admin));
+      localStorage.setItem('userRole', 'admin');
+      
+      navigate('/dashboard');
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -75,11 +79,7 @@ const Login: React.FC = () => {
             </Button>
           </Form>
 
-          <div className="mt-4 text-center">
-            <small className="text-muted">
-              Admin: admin@velora.com / admin123
-            </small>
-          </div>
+
         </Card.Body>
       </Card>
     </div>

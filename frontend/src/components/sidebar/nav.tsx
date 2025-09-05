@@ -300,6 +300,27 @@ export const MENUITEMS: any = [
     selected: false,
     children: [
       {
+        path: `category-master`,
+        type: "link",
+        active: false,
+        selected: false,
+        title: "Category Master",
+      },
+      {
+        path: `unit-master`,
+        type: "link",
+        active: false,
+        selected: false,
+        title: "Unit Master",
+      },
+      {
+        path: `tax-master`,
+        type: "link",
+        active: false,
+        selected: false,
+        title: "Tax Master",
+      },
+      {
         path: `item-master`,
         type: "link",
         active: false,
@@ -347,20 +368,20 @@ export const MENUITEMS: any = [
       },
     ],
   },
-  {
-    title: "Users",
-    icon: Authenticationicon,
-    type: "sub",
-    active: false,
-    selected: false,
-    children: [
-      {
-        path: `user-management`,
-        type: "link",
-        active: false,
-        selected: false,
-        title: "User Management",
-      },
-    ],
-  },
+  // {
+  //   title: "Users",
+  //   icon: Authenticationicon,
+  //   type: "sub",
+  //   active: false,
+  //   selected: false,
+  //   children: [
+  //     {
+  //       path: `user-management`,
+  //       type: "link",
+  //       active: false,
+  //       selected: false,
+  //       title: "User Management",
+  //     },
+  //   ],
+  // },
   ];

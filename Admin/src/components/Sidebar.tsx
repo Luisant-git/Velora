@@ -69,14 +69,14 @@ const MENUITEMS = [
     selected: false,
     title: "Company Master",
   },
-  {
-    path: "settings",
-    icon: Utilitiesicon,
-    type: "link",
-    active: false,
-    selected: false,
-    title: "Settings",
-  },
+  // {
+  //   path: "settings",
+  //   icon: Utilitiesicon,
+  //   type: "link",
+  //   active: false,
+  //   selected: false,
+  //   title: "Settings",
+  // },
 ];
 
 const Sidebar = () => {

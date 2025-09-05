@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, BadRequestException, UnauthorizedException, Get, Put, Delete, Param, Patch } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
@@ -108,5 +108,95 @@ export class AdminController {
       }
       throw error;
     }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('companies')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all companies' })
+  async getCompanies(@Request() req) {
+    return this.prisma.company.findMany({
+      where: { adminId: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+        dbName: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('companies/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update company' })
+  async updateCompany(@Param('id') id: string, @Body() dto: Partial<CreateCompanyDto>, @Request() req) {
+    const updateData: any = {
+      email: dto.email,
+      name: dto.name,
+      isActive: dto.isActive,
+    };
+
+    if (dto.password) {
+      updateData.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    const company = await this.prisma.company.update({
+      where: { id, adminId: req.user.id },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+        dbName: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return company;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('companies/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete company' })
+  async deleteCompany(@Param('id') id: string, @Request() req) {
+    await this.prisma.company.delete({
+      where: { id, adminId: req.user.id },
+    });
+    return { message: 'Company deleted successfully' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('companies/:id/toggle-status')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Toggle company active status' })
+  async toggleCompanyStatus(@Param('id') id: string, @Request() req) {
+    const company = await this.prisma.company.findUnique({
+      where: { id, adminId: req.user.id },
+    });
+
+    if (!company) {
+      throw new BadRequestException('Company not found');
+    }
+
+    return this.prisma.company.update({
+      where: { id },
+      data: { isActive: !company.isActive },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isActive: true,
+        dbName: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 }

@@ -18,6 +18,8 @@ const Error404 = lazy(() => import("./pages/errors/Error404.tsx"));
 const Error500 = lazy(() => import("./pages/errors/Error500.tsx"));
 const Landing = lazy(() => import("./pages/Landing.tsx"));
 const Login = lazy(() => import("./firebase/login.tsx"));
+const ForgotPassword = lazy(() => import("./firebase/ForgotPassword.tsx"));
+const ResetPassword = lazy(() => import("./firebase/ResetPassword.tsx"));
 const PublicRoute = lazy(() => import("./firebase/PublicRoute.tsx"));
 const ProtectedRoute = lazy(() => import("./firebase/ProtectedRoute.tsx"));
 const Signup = lazy(() => import("./firebase/signup.tsx"));
@@ -34,6 +36,8 @@ createRoot(document.getElementById("root")!).render(
                   <Route index element={<Login />} />
                   <Route path={`login`} element={<Login />} />
                   <Route path={`signup`} element={<Signup />} />
+                  <Route path={`forgot-password`} element={<ForgotPassword />} />
+                  <Route path={`reset-password`} element={<ResetPassword />} />
                 </Route>
                 <Route element={<ProtectedRoute />}>
                   <Route element={<App />}>

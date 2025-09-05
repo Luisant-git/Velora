@@ -28,6 +28,8 @@ model Company {
   password    String
   isActive    Boolean  @default(true)
   dbName      String   @unique            // Database name for multi-tenancy
+  resetToken  String?                     // Password reset token
+  resetTokenExpiry DateTime?              // Token expiry time
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -42,10 +44,20 @@ model ItemMaster {
   itemCode    String   @unique
   itemName    String
   tax         Float
+  purchaseRate Float
   sellingRate Float
   mrp         Float
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  
+  taxId       String?
+  taxMaster   Tax?      @relation(fields: [taxId], references: [id])
+  
+  unitId      String?
+  unit        Unit?     @relation(fields: [unitId], references: [id])
   
   saleItems   SaleItem[]
   
@@ -68,7 +80,6 @@ model CustomerMaster {
 model Sale {
   id          String   @id @default(cuid())
   totalAmount Float
-  discount    Float    @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -83,6 +94,7 @@ model Sale {
 model SaleItem {
   id       String @id @default(cuid())
   quantity Int
+  discount Float  @default(0)
   
   saleId   String
   sale     Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
@@ -91,4 +103,37 @@ model SaleItem {
   item     ItemMaster @relation(fields: [itemId], references: [id])
   
   @@map("sale_items")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  items     ItemMaster[]
+  
+  @@map("categories")
+}
+
+model Tax {
+  id        String   @id @default(cuid())
+  rate      Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  items     ItemMaster[]
+  
+  @@map("taxes")
+}
+
+model Unit {
+  id        String   @id @default(cuid())
+  symbol    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  items     ItemMaster[]
+  
+  @@map("units")
 }

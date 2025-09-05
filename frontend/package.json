@@ -52,6 +52,8 @@
     "formik": "^2.4.6",
     "google-map-react": "^2.2.1",
     "gridjs-react": "^6.1.1",
+    "jspdf": "^3.0.2",
+    "jspdf-autotable": "^5.0.2",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
     "lodash": "^4.17.21",
@@ -104,11 +106,13 @@
     "sweetalert2": "^11.14.5",
     "swiper": "^11.1.14",
     "swr": "^2.3.2",
+    "xlsx": "^0.18.5",
     "yet-another-react-lightbox": "^3.21.6",
     "yup": "^1.6.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
+    "@types/jspdf": "^2.0.0",
     "@types/lodash": "^4.17.15",
     "@types/react": "^18.3.12",
     "@types/react-color": "^3.0.12",

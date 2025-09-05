@@ -116,6 +116,12 @@ placeholder="Enter password"
                       </button>
                     </div>
                   </Form>
+                  
+                  <div className="text-center mt-3">
+                    <Link to="/forgot-password" className="text-primary">
+                      Forgot Password?
+                    </Link>
+                  </div>
 
                 </Card.Body>
               </Card>
