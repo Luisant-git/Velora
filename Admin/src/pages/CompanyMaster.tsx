@@ -177,7 +177,7 @@ const CompanyMaster: React.FC = () => {
                     <th>Company Name</th>
                     <th>Email</th>
                     <th>Phone</th>
-                    <th>GST Number</th>
+                    <th>Database Name</th>
                     <th>Status</th>
                     <th>Created Date</th>
                     <th>Actions</th>
@@ -189,7 +189,7 @@ const CompanyMaster: React.FC = () => {
                       <td>{company.name}</td>
                       <td>{company.email}</td>
                       <td>{company.phone || '-'}</td>
-                      <td>{company.gstNumber || '-'}</td>
+                      <td><code>{company.dbName}</code></td>
                       <td>
                         <Badge bg={company.isActive ? 'success' : 'secondary'}>
                           {company.isActive ? 'Active' : 'Inactive'}
