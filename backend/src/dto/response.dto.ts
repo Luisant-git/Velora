@@ -9,7 +9,15 @@ export class LoginResponseDto {
       id: 'admin_id',
       email: 'admin@example.com',
       name: 'Admin Name',
-      isActive: true
+      isActive: true,
+      phone: '1234567890',
+      logo: 'logo.png',
+      address: '123 Main St',
+      city: 'New York',
+      state: 'NY',
+      country: 'USA',
+      pinCode: '10001',
+      gstNumber: '22AAAAA0000A1Z5'
     }
   })
   admin?: any;
@@ -19,7 +27,15 @@ export class LoginResponseDto {
       id: 'company_id',
       email: 'company@example.com',
       name: 'Company Name',
-      isActive: true
+      isActive: true,
+      phone: '1234567890',
+      logo: 'logo.png',
+      address: '123 Main St',
+      city: 'New York',
+      state: 'NY',
+      country: 'USA',
+      pinCode: '10001',
+      gstNumber: '22AAAAA0000A1Z5',
     }
   })
   company?: any;

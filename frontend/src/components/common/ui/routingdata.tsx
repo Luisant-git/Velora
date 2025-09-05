@@ -10,6 +10,7 @@ const UnitMaster = lazy(() => import("../../../pages/velora/master/UnitMaster"))
 const SalesEntry = lazy(() => import("../../../pages/velora/transactions/SalesEntry"));
 const SalesReport = lazy(() => import("../../../pages/velora/reports/SalesReport"));
 const UserManagement = lazy(() => import("../../../pages/velora/users/UserManagement"));
+const Profile = lazy(() => import("../../header/Profile"));
 
 
 export const Routedata = [
@@ -24,5 +25,6 @@ export const Routedata = [
   { id: 8, path: `sales-entry`, element: <SalesEntry /> },
   { id: 9, path: `sales-report`, element: <SalesReport /> },
   { id: 10, path: `user-management`, element: <UserManagement /> },
+  { id: 11, path: `profile`, element: <Profile /> },
 
 ];

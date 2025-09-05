@@ -116,6 +116,77 @@ export class CompanyController {
     return { message: 'Password reset successful' };
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get company profile' })
+  async getProfile(@Request() req) {
+    console.log('User from JWT:', req.user);
+    return this.prisma.company.findUnique({
+      where: { id: req.user.sub || req.user.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        logo: true,
+        address: true,
+        city: true,
+        state: true,
+        country: true,
+        pinCode: true,
+        gstNumber: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('profile')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update company profile' })
+  async updateProfile(@Request() req, @Body() body: any) {
+    const updateData: any = {
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
+      logo: body.logo,
+      address: body.address,
+      city: body.city,
+      state: body.state,
+      country: body.country,
+      pinCode: body.pinCode,
+      gstNumber: body.gstNumber,
+    };
+
+    if (body.password) {
+      updateData.password = await bcrypt.hash(body.password, 10);
+    }
+
+    return this.prisma.company.update({
+      where: { id: req.user.sub || req.user.id },
+      data: updateData,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        logo: true,
+        address: true,
+        city: true,
+        state: true,
+        country: true,
+        pinCode: true,
+        gstNumber: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   // Item Master CRUD
   @UseGuards(JwtAuthGuard)
   @Post('items')

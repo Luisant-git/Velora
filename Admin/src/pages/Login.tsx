@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Form, Button, Alert } from 'react-bootstrap';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { adminService } from '../api/admin';
 
 const Login: React.FC = () => {
@@ -10,7 +10,7 @@ const Login: React.FC = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +27,8 @@ const Login: React.FC = () => {
       localStorage.setItem('adminData', JSON.stringify(response.admin));
       localStorage.setItem('userRole', 'admin');
       
-      navigate('/dashboard');
+      window.location.href = '/dashboard';
+
     } catch (error: any) {
       setError(error.response?.data?.message || 'Invalid email or password');
     } finally {

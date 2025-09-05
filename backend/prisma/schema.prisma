@@ -25,6 +25,14 @@ model Company {
   id          String   @id @default(cuid())
   email       String   @unique
   name        String
+  phone       String?
+  logo        String?
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+  pinCode     String?
+  gstNumber   String?
   password    String
   isActive    Boolean  @default(true)
   dbName      String   @unique           

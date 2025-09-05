@@ -263,13 +263,17 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
                 </span>
               </Dropdown.Toggle>
               <Dropdown.Menu className="main-header-dropdown pt-0 overflow-hidden header-profile-dropdown dropdown-menu-end">
+                <Dropdown.Item as={Link} to="/profile">
+                  <i className="fe fe-user me-2"></i>Profile
+                </Dropdown.Item>
+                <Dropdown.Divider />
                 <Dropdown.Item
                   onClick={(e) => {
                     e.preventDefault();
                     handleShowLogout();
                   }}
                 >
-                  Log Out
+                  <i className="fe fe-power me-2"></i>Log Out
                 </Dropdown.Item>
               </Dropdown.Menu>
             </Dropdown>

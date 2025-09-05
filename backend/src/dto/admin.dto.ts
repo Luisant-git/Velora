@@ -47,4 +47,44 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiProperty({ example: '1234567890', required: false })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ example: 'logo.png', required: false })
+  @IsOptional()
+  @IsString()
+  logo?: string;
+
+  @ApiProperty({ example: '123 Main St', required: false })
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @ApiProperty({ example: 'New York', required: false })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({ example: 'NY', required: false })
+  @IsOptional()
+  @IsString()
+  state?: string;
+
+  @ApiProperty({ example: 'USA', required: false })
+  @IsOptional()
+  @IsString()
+  country?: string;
+  
+  @ApiProperty({ example: '10001', required: false })
+  @IsOptional()
+  @IsString()
+  pinCode?: string;
+
+  @ApiProperty({ example: '22AAAAA0000A1Z5', required: false })
+  @IsOptional()
+  @IsString()
+  gstNumber?: string;
 }

@@ -27,12 +27,28 @@ export interface CompanyData {
   name: string;
   password: string;
   isActive?: boolean;
+  phone?: string;
+  logo?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pinCode?: string;
+  gstNumber?: string;
 }
 
 export interface Company {
   id: string;
   email: string;
   name: string;
+  phone?: string;
+  logo?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  pinCode?: string;
+  gstNumber?: string;
   isActive: boolean;
   dbName: string;
   createdAt: string;

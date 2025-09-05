@@ -12,6 +12,14 @@ const CompanyMaster: React.FC = () => {
   const [formData, setFormData] = useState({
     email: '',
     name: '',
+    phone: '',
+    logo: '',
+    address: '',
+    city: '',
+    state: '',
+    country: '',
+    pinCode: '',
+    gstNumber: '',
     password: '',
     confirmPassword: '',
     isActive: true,
@@ -40,6 +48,14 @@ const CompanyMaster: React.FC = () => {
       setFormData({
         email: company.email,
         name: company.name,
+        phone: company.phone || '',
+        logo: company.logo || '',
+        address: company.address || '',
+        city: company.city || '',
+        state: company.state || '',
+        country: company.country || '',
+        pinCode: company.pinCode || '',
+        gstNumber: company.gstNumber || '',
         password: '',
         confirmPassword: '',
         isActive: company.isActive,
@@ -50,6 +66,14 @@ const CompanyMaster: React.FC = () => {
       setFormData({
         email: '',
         name: '',
+        phone: '',
+        logo: '',
+        address: '',
+        city: '',
+        state: '',
+        country: '',
+        pinCode: '',
+        gstNumber: '',
         password: '',
         confirmPassword: '',
         isActive: true,
@@ -77,6 +101,14 @@ const CompanyMaster: React.FC = () => {
       const companyData: CompanyData = {
         email: formData.email,
         name: formData.name,
+        phone: formData.phone,
+        logo: formData.logo,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
+        pinCode: formData.pinCode,
+        gstNumber: formData.gstNumber,
         password: formData.password,
         isActive: formData.isActive,
       }
@@ -144,7 +176,8 @@ const CompanyMaster: React.FC = () => {
                   <tr>
                     <th>Company Name</th>
                     <th>Email</th>
-                    <th>Database Name</th>
+                    <th>Phone</th>
+                    <th>GST Number</th>
                     <th>Status</th>
                     <th>Created Date</th>
                     <th>Actions</th>
@@ -155,7 +188,8 @@ const CompanyMaster: React.FC = () => {
                     <tr key={company.id}>
                       <td>{company.name}</td>
                       <td>{company.email}</td>
-                      <td><code>{company.dbName}</code></td>
+                      <td>{company.phone || '-'}</td>
+                      <td>{company.gstNumber || '-'}</td>
                       <td>
                         <Badge bg={company.isActive ? 'success' : 'secondary'}>
                           {company.isActive ? 'Active' : 'Inactive'}
@@ -193,7 +227,7 @@ const CompanyMaster: React.FC = () => {
           {error && <Alert variant="danger">{error}</Alert>}
           <Form>
             <Row>
-              <Col md={12} className="mb-3">
+              <Col md={6} className="mb-3">
                 <Form.Label>Company Name</Form.Label>
                 <Form.Control
                   type="text"
@@ -201,7 +235,7 @@ const CompanyMaster: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </Col>
-              <Col md={12} className="mb-3">
+              <Col md={6} className="mb-3">
                 <Form.Label>Email</Form.Label>
                 <Form.Control
                   type="email"
@@ -209,7 +243,71 @@ const CompanyMaster: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 />
               </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Phone</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>GST Number</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.gstNumber}
+                  onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
+                />
+              </Col>
               <Col md={12} className="mb-3">
+                <Form.Label>Logo URL</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.logo}
+                  onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
+                />
+              </Col>
+              <Col md={12} className="mb-3">
+                <Form.Label>Address</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </Col>
+              <Col md={4} className="mb-3">
+                <Form.Label>City</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                />
+              </Col>
+              <Col md={4} className="mb-3">
+                <Form.Label>State</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                />
+              </Col>
+              <Col md={4} className="mb-3">
+                <Form.Label>Country</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                />
+              </Col>
+              <Col md={6} className="mb-3">
+                <Form.Label>Pin Code</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.pinCode}
+                  onChange={(e) => setFormData({ ...formData, pinCode: e.target.value })}
+                />
+              </Col>
+              <Col md={6} className="mb-3">
                 <Form.Label>Password {editingCompany ? '(leave blank to keep current)' : '*'}</Form.Label>
                 <Form.Control
                   type="password"

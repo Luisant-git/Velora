@@ -16,6 +16,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "../frontend/src/components/header/Profile.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

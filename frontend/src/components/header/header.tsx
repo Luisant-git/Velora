@@ -484,12 +484,14 @@ const Header = ({ local_varaiable, ThemeChanger }: any) => {
                 />
               </Dropdown.Toggle>
               <Dropdown.Menu className="main-header-dropdown pt-0 overflow-hidden header-profile-dropdown dropdown-menu-end">
-                {/* <Dropdown.Item className="text-center border-bottom">
-                  <div>
-                    <span>admin@gmail.com</span>
-                    <span className="d-block fs-12 text-muted">Admin</span>
-                  </div>
-                </Dropdown.Item> */}
+                <Dropdown.Item
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate('/profile');
+                  }}>
+                    <i className="fe fe-user p-1 rounded-circle bg-primary-transparent ut me-2 fs-16"></i>
+                    Profile
+                </Dropdown.Item>
                 <Dropdown.Item
                   onClick={(e) => {
                     e.preventDefault();
