@@ -350,6 +350,13 @@ export const MENUITEMS: any = [
         selected: false,
         title: "Sales Entry",
       },
+      {
+        path: `ecommerce-sales`,
+        type: "link",
+        active: false,
+        selected: false,
+        title: "E-commerce Sales",
+      },
     ],
   },
   {

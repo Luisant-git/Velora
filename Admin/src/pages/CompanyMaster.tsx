@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, Button, Form, Modal, Table, Badge, Alert, Row, Col } from 'react-bootstrap'
 import { adminService, Company, CompanyData } from '../api/admin'
 import { toast } from 'react-toastify'
+import { indianStates, State } from '../data/indianStatesAndCities'
 
 const CompanyMaster: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([])
@@ -17,7 +18,7 @@ const CompanyMaster: React.FC = () => {
     address: '',
     city: '',
     state: '',
-    country: '',
+    country: 'India',
     pinCode: '',
     gstNumber: '',
     password: '',
@@ -25,6 +26,10 @@ const CompanyMaster: React.FC = () => {
     isActive: true,
     dbName: '',
   })
+  const [selectedState, setSelectedState] = useState<State | null>(null)
+  const [filteredCities, setFilteredCities] = useState<string[]>([])
+  const [citySearch, setCitySearch] = useState('')
+  const [stateSearch, setStateSearch] = useState('')
 
   useEffect(() => {
     fetchCompanies()
@@ -45,6 +50,10 @@ const CompanyMaster: React.FC = () => {
   const handleShow = (company?: Company) => {
     if (company) {
       setEditingCompany(company)
+      const stateName = company.state ? company.state.split(' (')[0] : ''
+      const state = indianStates.find(s => s.name === stateName)
+      setSelectedState(state || null)
+      setFilteredCities(state ? state.cities : [])
       setFormData({
         email: company.email,
         name: company.name,
@@ -53,7 +62,7 @@ const CompanyMaster: React.FC = () => {
         address: company.address || '',
         city: company.city || '',
         state: company.state || '',
-        country: company.country || '',
+        country: company.country || 'India',
         pinCode: company.pinCode || '',
         gstNumber: company.gstNumber || '',
         password: '',
@@ -71,7 +80,7 @@ const CompanyMaster: React.FC = () => {
         address: '',
         city: '',
         state: '',
-        country: '',
+        country: 'India',
         pinCode: '',
         gstNumber: '',
         password: '',
@@ -81,6 +90,10 @@ const CompanyMaster: React.FC = () => {
       })
     }
     setError('')
+    setSelectedState(null)
+    setFilteredCities([])
+    setCitySearch('')
+    setStateSearch('')
     setShow(true)
   }
 
@@ -88,7 +101,34 @@ const CompanyMaster: React.FC = () => {
     setShow(false)
     setEditingCompany(null)
     setError('')
+    setSelectedState(null)
+    setFilteredCities([])
+    setCitySearch('')
+    setStateSearch('')
   }
+
+  const handleStateChange = (stateName: string) => {
+    const state = indianStates.find(s => s.name === stateName)
+    setSelectedState(state || null)
+    const stateWithCode = state ? `${state.name} (${state.stateCode})` : stateName
+    setFormData({ ...formData, state: stateWithCode, city: '' })
+    setFilteredCities(state ? state.cities : [])
+    setCitySearch('')
+    setStateSearch(stateName)
+  }
+
+  const handleCityChange = (cityName: string) => {
+    setFormData({ ...formData, city: cityName })
+    setCitySearch(cityName)
+  }
+
+  const filteredStates = indianStates.filter(state => 
+    state.name.toLowerCase().includes(stateSearch.toLowerCase())
+  )
+
+  const filteredCitiesForSearch = filteredCities.filter(city => 
+    city.toLowerCase().includes(citySearch.toLowerCase())
+  )
 
   const handleSave = async () => {
     if (!formData.email || !formData.name || (!editingCompany && !formData.password)) {
@@ -276,20 +316,40 @@ const CompanyMaster: React.FC = () => {
                 />
               </Col>
               <Col md={4} className="mb-3">
-                <Form.Label>City</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                />
-              </Col>
-              <Col md={4} className="mb-3">
                 <Form.Label>State</Form.Label>
                 <Form.Control
-                  type="text"
-                  value={formData.state}
-                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                />
+                  as="select"
+                  value={selectedState?.name || ''}
+                  onChange={(e) => handleStateChange(e.target.value)}
+                >
+                  <option value="">Select State</option>
+                  {indianStates.map((state) => (
+                    <option key={state.code} value={state.name}>
+                      {state.name}
+                    </option>
+                  ))}
+                </Form.Control>
+                {formData.state && (
+                  <Form.Text className="text-muted">
+                    Selected: {formData.state}
+                  </Form.Text>
+                )}
+              </Col>
+              <Col md={4} className="mb-3">
+                <Form.Label>City</Form.Label>
+                <Form.Control
+                  as="select"
+                  value={formData.city}
+                  onChange={(e) => handleCityChange(e.target.value)}
+                  disabled={!selectedState}
+                >
+                  <option value="">Select City</option>
+                  {filteredCities.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </Form.Control>
               </Col>
               <Col md={4} className="mb-3">
                 <Form.Label>Country</Form.Label>
@@ -297,6 +357,7 @@ const CompanyMaster: React.FC = () => {
                   type="text"
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  readOnly
                 />
               </Col>
               <Col md={6} className="mb-3">

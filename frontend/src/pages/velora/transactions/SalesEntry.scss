@@ -1,0 +1,28 @@
+.product-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #007bff;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  h6 {
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .text-primary {
+    color: #007bff !important;
+    font-weight: 600;
+  }
+}
+
+.modal-xl {
+  max-width: 90%;
+}

@@ -8,6 +8,7 @@ const CategoryMaster = lazy(() => import("../../../pages/velora/master/CategoryM
 const TaxMaster = lazy(() => import("../../../pages/velora/master/TaxMaster"));
 const UnitMaster = lazy(() => import("../../../pages/velora/master/UnitMaster"));
 const SalesEntry = lazy(() => import("../../../pages/velora/transactions/SalesEntry"));
+const EcommerceSalesEntry = lazy(() => import("../../../pages/velora/transactions/EcommerceSalesEntry"));
 const SalesReport = lazy(() => import("../../../pages/velora/reports/SalesReport"));
 const UserManagement = lazy(() => import("../../../pages/velora/users/UserManagement"));
 const Profile = lazy(() => import("../../header/Profile"));
@@ -23,8 +24,9 @@ export const Routedata = [
   { id: 6, path: `tax-master`, element: <TaxMaster /> },
   { id: 7, path: `unit-master`, element: <UnitMaster /> },
   { id: 8, path: `sales-entry`, element: <SalesEntry /> },
-  { id: 9, path: `sales-report`, element: <SalesReport /> },
-  { id: 10, path: `user-management`, element: <UserManagement /> },
-  { id: 11, path: `profile`, element: <Profile /> },
+  { id: 9, path: `ecommerce-sales`, element: <EcommerceSalesEntry /> },
+  { id: 10, path: `sales-report`, element: <SalesReport /> },
+  { id: 11, path: `user-management`, element: <UserManagement /> },
+  { id: 12, path: `profile`, element: <Profile /> },
 
 ];

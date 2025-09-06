@@ -55,7 +55,15 @@ const ItemMaster: React.FC = () => {
     categoryId: '',
     taxId: '',
     unitId: '',
+    image: '',
   });
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [categorySearch, setCategorySearch] = useState('');
+  const [taxSearch, setTaxSearch] = useState('');
+  const [unitSearch, setUnitSearch] = useState('');
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showTaxDropdown, setShowTaxDropdown] = useState(false);
+  const [showUnitDropdown, setShowUnitDropdown] = useState(false);
 
   useEffect(() => {
     fetchItems();
@@ -101,7 +109,18 @@ const ItemMaster: React.FC = () => {
         categoryId: item.categoryId || '',
         taxId: item.taxId || '',
         unitId: item.unitId || '',
+        image: (item as any).image || '',
       });
+      setImagePreview((item as any).image || '');
+      
+      // Set search fields for editing
+      const category = categories.find(c => c.id === item.categoryId);
+      const tax = taxes.find(t => t.id === item.taxId);
+      const unit = units.find(u => u.id === item.unitId);
+      
+      setCategorySearch(category?.name || '');
+      setTaxSearch(tax ? `${tax.rate}%` : '');
+      setUnitSearch(unit?.symbol || '');
     } else {
       setEditingItem(null);
       setFormData({
@@ -113,7 +132,9 @@ const ItemMaster: React.FC = () => {
         categoryId: '',
         taxId: '',
         unitId: '',
+        image: '',
       });
+      setImagePreview('');
     }
     setError('');
     setShow(true);
@@ -123,7 +144,66 @@ const ItemMaster: React.FC = () => {
     setShow(false);
     setEditingItem(null);
     setError('');
+    setImagePreview('');
+    setCategorySearch('');
+    setTaxSearch('');
+    setUnitSearch('');
+    setShowCategoryDropdown(false);
+    setShowTaxDropdown(false);
+    setShowUnitDropdown(false);
   };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size should be less than 5MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData({ ...formData, image: base64String });
+        setImagePreview(base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setFormData({ ...formData, image: '' });
+    setImagePreview('');
+  };
+
+  const handleCategorySelect = (categoryId: string, categoryName: string) => {
+    setFormData({ ...formData, categoryId });
+    setCategorySearch(categoryName);
+    setShowCategoryDropdown(false);
+  };
+
+  const handleTaxSelect = (taxId: string, taxRate: number) => {
+    setFormData({ ...formData, taxId });
+    setTaxSearch(`${taxRate}%`);
+    setShowTaxDropdown(false);
+  };
+
+  const handleUnitSelect = (unitId: string, unitSymbol: string) => {
+    setFormData({ ...formData, unitId });
+    setUnitSearch(unitSymbol);
+    setShowUnitDropdown(false);
+  };
+
+  const filteredCategories = categories.filter(category => 
+    category.name.toLowerCase().includes(categorySearch.toLowerCase())
+  );
+
+  const filteredTaxes = taxes.filter(tax => 
+    tax.rate.toString().includes(taxSearch.replace('%', ''))
+  );
+
+  const filteredUnits = units.filter(unit => 
+    unit.symbol.toLowerCase().includes(unitSearch.toLowerCase())
+  );
 
   const validateForm = () => {
     if (!formData.itemCode || !formData.itemName || !formData.purchaseRate || !formData.sellingRate || !formData.mrp || !formData.taxId) {
@@ -223,6 +303,7 @@ const ItemMaster: React.FC = () => {
             <Table className="table text-nowrap">
               <thead>
                 <tr>
+                  <th>Image</th>
                   <th>Item Code</th>
                   <th>Item Name</th>
                   <th>Category</th>
@@ -236,9 +317,18 @@ const ItemMaster: React.FC = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={9} className="text-center">Loading...</td></tr>
+                  <tr><td colSpan={10} className="text-center">Loading...</td></tr>
                 ) : filteredItems.map((item) => (
                   <tr key={item.id}>
+                    <td>
+                      {(item as any).image ? (
+                        <img src={(item as any).image} alt={item.itemName} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
+                      ) : (
+                        <div style={{ width: '40px', height: '40px', backgroundColor: '#f8f9fa', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <i className="fe fe-image" style={{ color: '#6c757d' }}></i>
+                        </div>
+                      )}
+                    </td>
                     <td>{item.itemCode}</td>
                     <td>{item.itemName}</td>
                     <td>{item.category?.name || '-'}</td>
@@ -291,46 +381,97 @@ const ItemMaster: React.FC = () => {
               </Col>
               <Col md={6} className="mb-3">
                 <Form.Label>Category</Form.Label>
-                <Form.Select
-                  value={formData.categoryId}
-                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </Form.Select>
+                <div className="position-relative">
+                  <Form.Control
+                    type="text"
+                    placeholder="Search and select category"
+                    value={categorySearch}
+                    onChange={(e) => {
+                      setCategorySearch(e.target.value);
+                      setShowCategoryDropdown(true);
+                    }}
+                    onFocus={() => setShowCategoryDropdown(true)}
+                  />
+                  {showCategoryDropdown && (
+                    <div className="position-absolute w-100 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
+                      {filteredCategories.map((category) => (
+                        <div
+                          key={category.id}
+                          className="p-2 border-bottom cursor-pointer"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handleCategorySelect(category.id, category.name)}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                        >
+                          {category.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Col>
               <Col md={6} className="mb-3">
                 <Form.Label>Unit</Form.Label>
-                <Form.Select
-                  value={formData.unitId}
-                  onChange={(e) => setFormData({ ...formData, unitId: e.target.value })}
-                >
-                  <option value="">Select Unit</option>
-                  {units.map((unit) => (
-                    <option key={unit.id} value={unit.id}>
-                      {unit.symbol}
-                    </option>
-                  ))}
-                </Form.Select>
+                <div className="position-relative">
+                  <Form.Control
+                    type="text"
+                    placeholder="Search and select unit"
+                    value={unitSearch}
+                    onChange={(e) => {
+                      setUnitSearch(e.target.value);
+                      setShowUnitDropdown(true);
+                    }}
+                    onFocus={() => setShowUnitDropdown(true)}
+                  />
+                  {showUnitDropdown && (
+                    <div className="position-absolute w-100 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
+                      {filteredUnits.map((unit) => (
+                        <div
+                          key={unit.id}
+                          className="p-2 border-bottom cursor-pointer"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handleUnitSelect(unit.id, unit.symbol)}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                        >
+                          {unit.symbol}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Col>
               <Col md={6} className="mb-3">
                 <Form.Label>Tax Master *</Form.Label>
-                <Form.Select
-                  value={formData.taxId}
-                  onChange={(e) => setFormData({ ...formData, taxId: e.target.value })}
-                  required
-                >
-                  <option value="">Select Tax</option>
-                  {taxes.map((tax) => (
-                    <option key={tax.id} value={tax.id}>
-                      {tax.rate}%
-                    </option>
-                  ))}
-                </Form.Select>
+                <div className="position-relative">
+                  <Form.Control
+                    type="text"
+                    placeholder="Search and select tax rate"
+                    value={taxSearch}
+                    onChange={(e) => {
+                      setTaxSearch(e.target.value);
+                      setShowTaxDropdown(true);
+                    }}
+                    onFocus={() => setShowTaxDropdown(true)}
+                    required
+                  />
+                  {showTaxDropdown && (
+                    <div className="position-absolute w-100 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
+                      {filteredTaxes.map((tax) => (
+                        <div
+                          key={tax.id}
+                          className="p-2 border-bottom cursor-pointer"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handleTaxSelect(tax.id, tax.rate)}
+                          onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                          onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                        >
+                          {tax.rate}%
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </Col>
               <Col md={6} className="mb-3">
                 <Form.Label>Purchase Rate</Form.Label>
@@ -361,6 +502,23 @@ const ItemMaster: React.FC = () => {
                   value={formData.mrp}
                   onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
                 />
+              </Col>
+              <Col md={12} className="mb-3">
+                <Form.Label>Product Image (Optional)</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+                <Form.Text className="text-muted">Maximum file size: 5MB</Form.Text>
+                {imagePreview && (
+                  <div className="mt-2">
+                    <img src={imagePreview} alt="Preview" style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '4px' }} />
+                    <Button variant="outline-danger" size="sm" className="ms-2" onClick={removeImage}>
+                      <i className="fe fe-x"></i> Remove
+                    </Button>
+                  </div>
+                )}
               </Col>
             </Row>
           </Form>
