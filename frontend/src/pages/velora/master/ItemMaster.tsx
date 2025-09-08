@@ -7,10 +7,11 @@ interface Item {
   id: string;
   itemCode: string;
   itemName: string;
-  tax: number;
-  purchaseRate: number;
+  tax?: number;
+  purchaseRate?: number;
   sellingRate: number;
-  mrp: number;
+  mrp?: number;
+  imageUrl?: string;
   categoryId?: string;
   taxId?: string;
   unitId?: string;
@@ -55,7 +56,7 @@ const ItemMaster: React.FC = () => {
     categoryId: '',
     taxId: '',
     unitId: '',
-    image: '',
+    imageUrl: '',
   });
   const [imagePreview, setImagePreview] = useState<string>('');
   const [categorySearch, setCategorySearch] = useState('');
@@ -103,15 +104,15 @@ const ItemMaster: React.FC = () => {
       setFormData({
         itemCode: item.itemCode,
         itemName: item.itemName,
-        purchaseRate: item.purchaseRate.toString(),
+        purchaseRate: item.purchaseRate?.toString() || '',
         sellingRate: item.sellingRate.toString(),
-        mrp: item.mrp.toString(),
+        mrp: item.mrp?.toString() || '',
         categoryId: item.categoryId || '',
         taxId: item.taxId || '',
         unitId: item.unitId || '',
-        image: (item as any).image || '',
+        imageUrl: item.imageUrl || '',
       });
-      setImagePreview((item as any).image || '');
+      setImagePreview(item.imageUrl || '');
       
       // Set search fields for editing
       const category = categories.find(c => c.id === item.categoryId);
@@ -132,7 +133,7 @@ const ItemMaster: React.FC = () => {
         categoryId: '',
         taxId: '',
         unitId: '',
-        image: '',
+        imageUrl: '',
       });
       setImagePreview('');
     }
@@ -163,7 +164,7 @@ const ItemMaster: React.FC = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        setFormData({ ...formData, image: base64String });
+        setFormData({ ...formData, imageUrl: base64String });
         setImagePreview(base64String);
       };
       reader.readAsDataURL(file);
@@ -171,7 +172,7 @@ const ItemMaster: React.FC = () => {
   };
 
   const removeImage = () => {
-    setFormData({ ...formData, image: '' });
+    setFormData({ ...formData, imageUrl: '' });
     setImagePreview('');
   };
 
@@ -206,13 +207,13 @@ const ItemMaster: React.FC = () => {
   );
 
   const validateForm = () => {
-    if (!formData.itemCode || !formData.itemName || !formData.purchaseRate || !formData.sellingRate || !formData.mrp || !formData.taxId) {
-      setError('All fields including tax selection are required');
+    if (!formData.itemCode || !formData.itemName || !formData.sellingRate) {
+      setError('Item Code, Item Name, and Selling Rate are required');
       return false;
     }
 
-    if (parseFloat(formData.purchaseRate) <= 0 || parseFloat(formData.sellingRate) <= 0 || parseFloat(formData.mrp) <= 0) {
-      setError('Prices must be positive');
+    if (parseFloat(formData.sellingRate) <= 0) {
+      setError('Selling Rate must be positive');
       return false;
     }
 
@@ -224,18 +225,25 @@ const ItemMaster: React.FC = () => {
 
     setLoading(true);
     try {
-      const selectedTax = taxes.find(t => t.id === formData.taxId);
-      const itemData = {
+      const itemData: any = {
         itemCode: formData.itemCode,
         itemName: formData.itemName,
-        tax: selectedTax?.rate || 0,
-        purchaseRate: parseFloat(formData.purchaseRate),
         sellingRate: parseFloat(formData.sellingRate),
-        mrp: parseFloat(formData.mrp),
-        categoryId: formData.categoryId || undefined,
-        taxId: formData.taxId,
-        unitId: formData.unitId || undefined,
       };
+
+      // Only add optional fields if they have valid values
+      if (formData.categoryId && formData.categoryId !== '') {
+        itemData.categoryId = formData.categoryId;
+      }
+      if (formData.taxId && formData.taxId !== '') {
+        itemData.taxId = formData.taxId;
+      }
+      if (formData.unitId && formData.unitId !== '') {
+        itemData.unitId = formData.unitId;
+      }
+      if (formData.imageUrl && formData.imageUrl !== '') {
+        itemData.imageUrl = formData.imageUrl;
+      }
 
       if (editingItem) {
         await veloraAPI.updateItem(editingItem.id, itemData);
@@ -270,6 +278,29 @@ const ItemMaster: React.FC = () => {
     item.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.itemCode.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.category-dropdown-container')) {
+        setShowCategoryDropdown(false);
+      }
+      if (!target.closest('.unit-dropdown-container')) {
+        setShowUnitDropdown(false);
+      }
+      if (!target.closest('.tax-dropdown-container')) {
+        setShowTaxDropdown(false);
+      }
+    };
+
+    if (showCategoryDropdown || showUnitDropdown || showTaxDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCategoryDropdown, showUnitDropdown, showTaxDropdown]);
 
   return (
     <div className="container-fluid">
@@ -321,8 +352,8 @@ const ItemMaster: React.FC = () => {
                 ) : filteredItems.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      {(item as any).image ? (
-                        <img src={(item as any).image} alt={item.itemName} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.itemName} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />
                       ) : (
                         <div style={{ width: '40px', height: '40px', backgroundColor: '#f8f9fa', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <i className="fe fe-image" style={{ color: '#6c757d' }}></i>
@@ -362,7 +393,7 @@ const ItemMaster: React.FC = () => {
           <Form>
             <Row>
               <Col md={12} className="mb-3">
-                <Form.Label>Item Code</Form.Label>
+                <Form.Label>Item Code *</Form.Label>
                 <Form.Control
                   type="text"
                   required
@@ -371,7 +402,7 @@ const ItemMaster: React.FC = () => {
                 />
               </Col>
               <Col md={12} className="mb-3">
-                <Form.Label>Item Name</Form.Label>
+                <Form.Label>Item Name *</Form.Label>
                 <Form.Control
                   type="text"
                   required
@@ -381,7 +412,7 @@ const ItemMaster: React.FC = () => {
               </Col>
               <Col md={6} className="mb-3">
                 <Form.Label>Category</Form.Label>
-                <div className="position-relative">
+                <div className="position-relative category-dropdown-container">
                   <Form.Control
                     type="text"
                     placeholder="Search and select category"
@@ -412,7 +443,7 @@ const ItemMaster: React.FC = () => {
               </Col>
               <Col md={6} className="mb-3">
                 <Form.Label>Unit</Form.Label>
-                <div className="position-relative">
+                <div className="position-relative unit-dropdown-container">
                   <Form.Control
                     type="text"
                     placeholder="Search and select unit"
@@ -442,8 +473,8 @@ const ItemMaster: React.FC = () => {
                 </div>
               </Col>
               <Col md={6} className="mb-3">
-                <Form.Label>Tax Master *</Form.Label>
-                <div className="position-relative">
+                <Form.Label>Tax Master</Form.Label>
+                <div className="position-relative tax-dropdown-container">
                   <Form.Control
                     type="text"
                     placeholder="Search and select tax rate"
@@ -453,7 +484,6 @@ const ItemMaster: React.FC = () => {
                       setShowTaxDropdown(true);
                     }}
                     onFocus={() => setShowTaxDropdown(true)}
-                    required
                   />
                   {showTaxDropdown && (
                     <div className="position-absolute w-100 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
@@ -478,13 +508,12 @@ const ItemMaster: React.FC = () => {
                 <Form.Control
                   type="number"
                   step="0.01"
-                  required
                   value={formData.purchaseRate}
                   onChange={(e) => setFormData({ ...formData, purchaseRate: e.target.value })}
                 />
               </Col>
               <Col md={6} className="mb-3">
-                <Form.Label>Selling Rate</Form.Label>
+                <Form.Label>Selling Rate *</Form.Label>
                 <Form.Control
                   type="number"
                   step="0.01"
@@ -498,7 +527,6 @@ const ItemMaster: React.FC = () => {
                 <Form.Control
                   type="number"
                   step="0.01"
-                  required
                   value={formData.mrp}
                   onChange={(e) => setFormData({ ...formData, mrp: e.target.value })}
                 />

@@ -51,10 +51,11 @@ model ItemMaster {
   id          String   @id @default(cuid())
   itemCode    String   @unique
   itemName    String
-  tax         Float
-  purchaseRate Float
+  tax         Float?   @default(0)
+  purchaseRate Float?  @default(0)
   sellingRate Float
-  mrp         Float
+  mrp         Float?   @default(0)
+  imageUrl    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   

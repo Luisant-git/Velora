@@ -12,6 +12,7 @@ interface Item {
   purchaseRate: number;
   sellingRate: number;
   mrp: number;
+  imageUrl?: string;
 }
 
 interface Customer {
@@ -75,7 +76,7 @@ const EcommerceSalesEntry: React.FC = () => {
         total: item.sellingRate + (item.sellingRate * item.tax / 100),
       };
       setSaleItems(prev => [...prev, newSaleItem]);
-      toast.success(`${item.itemName} added to cart`);
+      // toast.success(`${item.itemName} added to cart`);
     }
   };
 
@@ -164,6 +165,28 @@ const EcommerceSalesEntry: React.FC = () => {
   const totals = calculateTotals();
   const cartItemCount = saleItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  const generateInvoiceText = () => {
+    const invoiceDate = new Date().toLocaleDateString();
+    let invoice = `INVOICE\n`;
+    invoice += `Date: ${invoiceDate}\n`;
+    invoice += `Customer: ${selectedCustomer?.name || 'N/A'} (${selectedCustomer?.phone || 'N/A'})\n\n`;
+    invoice += `ITEMS:\n`;
+    invoice += `${'Item'.padEnd(20)} ${'Qty'.padEnd(5)} ${'Price'.padEnd(10)} ${'Total'.padEnd(10)}\n`;
+    invoice += `${'-'.repeat(50)}\n`;
+    
+    saleItems.forEach(item => {
+      invoice += `${item.itemName.padEnd(20)} ${item.quantity.toString().padEnd(5)} ${('₹' + item.sellingPrice).padEnd(10)} ${('₹' + item.total.toFixed(2)).padEnd(10)}\n`;
+    });
+    
+    invoice += `${'-'.repeat(50)}\n`;
+    invoice += `Subtotal: ₹${totals.subtotal.toFixed(2)}\n`;
+    invoice += `Discount: -₹${totals.totalDiscount.toFixed(2)}\n`;
+    invoice += `Tax: ₹${totals.totalTax.toFixed(2)}\n`;
+    invoice += `TOTAL: ₹${totals.grandTotal.toFixed(2)}\n`;
+    
+    return invoice;
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
@@ -181,23 +204,31 @@ const EcommerceSalesEntry: React.FC = () => {
     };
   }, [showCustomerDropdown]);
 
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media print {
+        body * { visibility: hidden; }
+        .invoice-summary-card, .invoice-summary-card * { visibility: visible; }
+        .invoice-summary-card { position: absolute; left: 0; top: 0; width: 100%; }
+        .btn { display: none !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
   return (
     <div className="container-fluid">
-      <div className="page-header d-flex justify-content-between align-items-center">
-        <h4 className="page-title">E-commerce Sales</h4>
-        <Button variant="primary" onClick={() => setShowCart(true)} className="position-relative">
-          <i className="fe fe-shopping-cart me-2"></i>Cart
-          {cartItemCount > 0 && (
-            <Badge bg="danger" className="position-absolute top-0 start-100 translate-middle rounded-pill">
-              {cartItemCount}
-            </Badge>
-          )}
-        </Button>
-      </div>
+      <Row>
+        <Col lg={8}>
+          <div className="page-header d-flex justify-content-between align-items-center mb-3">
+            <h4 className="page-title mb-0">E-commerce Sales</h4>
+          </div>
 
-      <Card className="custom-card mb-3">
-        <Card.Body>
-          <Form.Label>Select Customer</Form.Label>
+          <Card className="mb-3">
+            <Card.Body>
+              <Form.Label>Select Customer</Form.Label>
           <div className="position-relative customer-dropdown-container">
             <div className="input-group">
               <Form.Control
@@ -272,56 +303,174 @@ const EcommerceSalesEntry: React.FC = () => {
                 )}
               </div>
             )}
-          </div>
-        </Card.Body>
-      </Card>
+              </div>
+            </Card.Body>
+          </Card>
 
-      <Card className="custom-card">
-        <Card.Body>
-          <h6 className="mb-3">Products</h6>
-          <Row>
-            {items.map((item) => (
-              <Col lg={3} md={4} sm={6} key={item.id} className="mb-3">
-                <Card className="h-100 product-card">
-                  <Card.Body className="text-center p-3">
-                    <div className="product-image mb-2">
-                      {(item as any).image ? (
-                        <img src={(item as any).image} alt={item.itemName} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
+          <Card>
+            <Card.Body>
+              <h6 className="mb-3">Products</h6>
+              <Row>
+            {items.map((item) => {
+              const cartItem = saleItems.find(si => si.itemCode === item.itemCode);
+              return (
+                <Col lg={3} md={4} sm={6} key={item.id} className="mb-3">
+                  <Card className="h-100 product-card">
+                    <Card.Body className="text-center p-3">
+                      <div className="product-image mb-2">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.itemName} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
+                        ) : (
+                          <div style={{ width: '100%', height: '80px', backgroundColor: '#f8f9fa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <i className="fe fe-package" style={{ fontSize: '2rem', color: '#6c757d' }}></i>
+                          </div>
+                        )}
+                      </div>
+                      <h6 className="product-name">{item.itemName}</h6>
+                      <p className="product-code text-muted">Code: {item.itemCode}</p>
+                      <div className="product-price mb-2">
+                        <span className="selling-price fw-bold">₹{item.sellingRate}</span>
+                      </div>
+                      {cartItem ? (
+                        <div className="d-flex align-items-center justify-content-center">
+                          <Button 
+                            size="sm" 
+                            variant="outline-secondary" 
+                            onClick={() => updateQuantity(cartItem.id, cartItem.quantity - 1)}
+                          >
+                            -
+                          </Button>
+                          <span className="mx-3 fw-bold">{cartItem.quantity}</span>
+                          <Button 
+                            size="sm" 
+                            variant="outline-secondary" 
+                            onClick={() => updateQuantity(cartItem.id, cartItem.quantity + 1)}
+                          >
+                            +
+                          </Button>
+                        </div>
                       ) : (
-                        <i className="fe fe-package"></i>
+                        <Button 
+                          variant="primary" 
+                          size="sm" 
+                          className="w-100"
+                          onClick={() => addToCart(item)}
+                        >
+                          <i className="fe fe-plus me-1"></i>Add to Cart
+                        </Button>
                       )}
+                    </Card.Body>
+                  </Card>
+                </Col>
+              );
+            })}
+              </Row>
+            </Card.Body>
+          </Card>
+        </Col>
+        
+        <Col lg={4}>
+          <div className="sticky-top" style={{ top: '20px' }}>
+            <Card className="shadow invoice-summary-card">
+              <Card.Header className="bg-primary text-white">
+                <h6 className="mb-0">Invoice Summary</h6>
+              </Card.Header>
+              <Card.Body>
+                {saleItems.length === 0 ? (
+                  <div className="text-center py-4">
+                    <i className="fe fe-file-text" style={{ fontSize: '2rem', color: '#ccc' }}></i>
+                    <p className="mt-2 text-muted">No items added</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      {saleItems.map((item) => (
+                        <div key={item.id} className="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                          <div>
+                            <small className="fw-bold">{item.itemName}</small>
+                            <br />
+                            <small className="text-muted">{item.quantity} × ₹{item.sellingPrice}</small>
+                          </div>
+                          <div className="text-end">
+                            <small className="fw-bold">₹{item.total.toFixed(2)}</small>
+                            <br />
+                            <Button size="sm" variant="outline-danger" onClick={() => removeFromCart(item.id)}>
+                              <i className="fe fe-x"></i>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <h6 className="product-name">{item.itemName}</h6>
-                    <p className="product-code">Code: {item.itemCode}</p>
-                    <div className="product-price">
-                      <span className="selling-price">₹{item.sellingRate}</span>
-                      <small className="mrp">MRP: ₹{item.mrp}</small>
+                    <hr />
+                    <div className="d-flex justify-content-between mb-2">
+                      <span>Subtotal:</span>
+                      <span>₹{totals.subtotal.toFixed(2)}</span>
                     </div>
-                    <Button 
-                      variant="primary" 
-                      size="sm" 
-                      className="mt-2 w-100"
-                      onClick={() => addToCart(item)}
-                    >
-                      <i className="fe fe-plus me-1"></i>Add to Cart
-                    </Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </Card.Body>
-      </Card>
+                    <div className="d-flex justify-content-between mb-2">
+                      <span>Discount:</span>
+                      <span>-₹{totals.totalDiscount.toFixed(2)}</span>
+                    </div>
+                    <div className="d-flex justify-content-between mb-3">
+                      <span>Tax:</span>
+                      <span>₹{totals.totalTax.toFixed(2)}</span>
+                    </div>
+                    <hr />
+                    <div className="d-flex justify-content-between mb-3">
+                      <h6>Total:</h6>
+                      <h6>₹{totals.grandTotal.toFixed(2)}</h6>
+                    </div>
+                    <div className="d-grid gap-2">
+                      <Button 
+                        variant="success" 
+                        onClick={handleCheckout}
+                        disabled={!selectedCustomer || loading}
+                      >
+                        {loading ? 'Saving...' : 'Save Invoice'}
+                      </Button>
+                      <div className="d-flex gap-2">
+                        <Button 
+                          variant="outline-primary" 
+                          size="sm" 
+                          className="flex-fill"
+                          onClick={() => window.print()}
+                        >
+                          <i className="fe fe-printer me-1"></i>Print
+                        </Button>
+                        <Button 
+                          variant="outline-secondary" 
+                          size="sm" 
+                          className="flex-fill"
+                          onClick={() => {
+                            const element = document.createElement('a');
+                            const file = new Blob([generateInvoiceText()], {type: 'text/plain'});
+                            element.href = URL.createObjectURL(file);
+                            element.download = `invoice-${Date.now()}.txt`;
+                            document.body.appendChild(element);
+                            element.click();
+                            document.body.removeChild(element);
+                          }}
+                        >
+                          <i className="fe fe-download me-1"></i>Download
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </Card.Body>
+            </Card>
+          </div>
+        </Col>
+      </Row>
 
-      <Modal show={showCart} onHide={() => setShowCart(false)} size="lg">
+      <Modal show={showCart} onHide={() => setShowCart(false)} size="lg" className="invoice-modal">
         <Modal.Header closeButton>
-          <Modal.Title>Shopping Cart</Modal.Title>
+          <Modal.Title>Invoice</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {saleItems.length === 0 ? (
             <div className="text-center py-4">
-              <i className="fe fe-shopping-cart" style={{ fontSize: '3rem', color: '#ccc' }}></i>
-              <p className="mt-2">Your cart is empty</p>
+              <i className="fe fe-file-text" style={{ fontSize: '3rem', color: '#ccc' }}></i>
+              <p className="mt-2">No items added to invoice</p>
             </div>
           ) : (
             <>
@@ -391,13 +540,13 @@ const EcommerceSalesEntry: React.FC = () => {
           )}
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowCart(false)}>Continue Shopping</Button>
+          <Button variant="secondary" onClick={() => setShowCart(false)}>Continue Adding Items</Button>
           <Button 
             variant="success" 
             onClick={handleCheckout} 
             disabled={saleItems.length === 0 || !selectedCustomer || loading}
           >
-            {loading ? 'Processing...' : 'Checkout'}
+            {loading ? 'Saving...' : 'Save Invoice'}
           </Button>
         </Modal.Footer>
       </Modal>

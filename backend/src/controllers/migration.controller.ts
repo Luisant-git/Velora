@@ -8,6 +8,25 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class MigrationController {
   constructor(private prisma: PrismaService) {}
 
+  @Post('add-imageurl-column/:dbName')
+  @ApiOperation({ summary: 'Add imageUrl column to item_masters table' })
+  async addImageUrlColumn(@Param('dbName') dbName: string) {
+    try {
+      const tenantClient = this.prisma.getTenantClient(dbName);
+      await tenantClient.$connect();
+      
+      // Add imageUrl column if it doesn't exist
+      await tenantClient.$executeRawUnsafe(`
+        ALTER TABLE "item_masters" 
+        ADD COLUMN IF NOT EXISTS "imageUrl" TEXT
+      `);
+      
+      return { message: 'ImageUrl column added successfully' };
+    } catch (error) {
+      throw new Error(`Migration failed: ${error.message}`);
+    }
+  }
+
   @Post('add-master-tables/:dbName')
   @ApiOperation({ summary: 'Add master tables to tenant database' })
   async addMasterTables(@Param('dbName') dbName: string) {

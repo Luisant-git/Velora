@@ -137,10 +137,24 @@ export class CompanyController {
         pinCode: true,
         gstNumber: true,
         isActive: true,
+        dbName: true,
         createdAt: true,
         updatedAt: true,
       },
     });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('user-info')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user info' })
+  async getUserInfo(@Request() req) {
+    return {
+      userId: req.user.sub || req.user.id,
+      email: req.user.email,
+      dbName: req.user.dbName,
+      type: req.user.type
+    };
   }
 
   @UseGuards(JwtAuthGuard)
@@ -188,6 +202,28 @@ export class CompanyController {
   }
 
   // Item Master CRUD
+  @UseGuards(JwtAuthGuard)
+  @Post('migrate-imageurl')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Add imageUrl column to current tenant database' })
+  async migrateImageUrl(@Request() req) {
+    try {
+      const tenantClient = this.prisma.getTenantClient(req.user.dbName);
+      await tenantClient.$connect();
+      
+      // Add imageUrl column if it doesn't exist
+      await tenantClient.$executeRawUnsafe(`
+        ALTER TABLE "item_masters" 
+        ADD COLUMN IF NOT EXISTS "imageUrl" TEXT
+      `);
+      
+      await tenantClient.$disconnect();
+      return { message: 'ImageUrl column added successfully', dbName: req.user.dbName };
+    } catch (error) {
+      throw new BadRequestException(`Migration failed: ${error.message}`);
+    }
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('items')
   @ApiBearerAuth()
@@ -244,15 +280,40 @@ export class CompanyController {
     });
     
     await tenantClient.$connect();
-    const result = await tenantClient.itemMaster.findMany({
-      include: {
-        category: true,
-        taxMaster: true,
-        unit: true,
-      },
-    });
-    await tenantClient.$disconnect();
-    return result;
+    
+    try {
+      const result = await tenantClient.itemMaster.findMany({
+        include: {
+          category: true,
+          taxMaster: true,
+          unit: true,
+        },
+      });
+      await tenantClient.$disconnect();
+      return result;
+    } catch (error: any) {
+      // If imageUrl column doesn't exist, add it and retry
+      if (error.code === 'P2022' && error.meta?.column === 'item_masters.imageUrl') {
+        console.log('Adding imageUrl column to tenant database:', req.user.dbName);
+        await tenantClient.$executeRawUnsafe(`
+          ALTER TABLE "item_masters" 
+          ADD COLUMN IF NOT EXISTS "imageUrl" TEXT
+        `);
+        
+        // Retry the query
+        const result = await tenantClient.itemMaster.findMany({
+          include: {
+            category: true,
+            taxMaster: true,
+            unit: true,
+          },
+        });
+        await tenantClient.$disconnect();
+        return result;
+      }
+      await tenantClient.$disconnect();
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard)

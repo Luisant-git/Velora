@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
   UNITS: "/company/units",
   DASHBOARD_STATS: "/company/dashboard/stats",
   COMPANY_PROFILE: "/company/profile",
+  PRODUCT_IMAGES: "/product-images",
 };
 
 // API Types
@@ -31,6 +32,7 @@ export interface ItemData {
   categoryId?: string;
   taxId?: string;
   unitId?: string;
+  imageUrl?: string;
 }
 
 export interface CustomerData {
@@ -325,6 +327,16 @@ export const veloraAPI = {
 
   deleteCompanyProfile: async () => {
     const response = await axiosServices.delete(API_ENDPOINTS.COMPANY_PROFILE);
+    return response.data;
+  },
+
+  // Product Images
+  uploadProductImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await axiosServices.post(`${API_ENDPOINTS.PRODUCT_IMAGES}/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
     return response.data;
   },
 };

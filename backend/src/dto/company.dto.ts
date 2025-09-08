@@ -21,21 +21,24 @@ export class CreateItemDto {
   @IsString()
   itemName: string;
 
-  @ApiProperty({ example: 18.0 })
-  @IsNumber()
-  tax: number;
-
-  @ApiProperty({ example: 80.0 })
-  @IsNumber()
-  purchaseRate: number;
-
   @ApiProperty({ example: 100.0 })
   @IsNumber()
   sellingRate: number;
 
-  @ApiProperty({ example: 120.0 })
+  @ApiProperty({ example: 18.0, required: false })
+  @IsOptional()
   @IsNumber()
-  mrp: number;
+  tax?: number;
+
+  @ApiProperty({ example: 80.0, required: false })
+  @IsOptional()
+  @IsNumber()
+  purchaseRate?: number;
+
+  @ApiProperty({ example: 120.0, required: false })
+  @IsOptional()
+  @IsNumber()
+  mrp?: number;
 
   @ApiProperty({ example: 'category_id_here', required: false })
   @IsOptional()
@@ -51,6 +54,11 @@ export class CreateItemDto {
   @IsOptional()
   @IsString()
   unitId?: string;
+
+  @ApiProperty({ example: 'http://localhost:3000/product-images/image.jpg', required: false })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
 
 export class UpdateItemDto {
@@ -98,6 +106,11 @@ export class UpdateItemDto {
   @IsOptional()
   @IsString()
   unitId?: string;
+
+  @ApiProperty({ example: 'http://localhost:3000/product-images/image.jpg', required: false })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
 
 export class CreateCustomerDto {
