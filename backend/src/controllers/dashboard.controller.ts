@@ -1,12 +1,16 @@
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Req, Param, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PrintService } from '../services/print.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger/dist/decorators/api-bearer.decorator';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('company/dashboard')
 export class DashboardController {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private printService: PrintService
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -57,6 +61,79 @@ export class DashboardController {
         totalItems: 0,
         monthlyGrowth: 0,
       };
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('sales')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get sales report' })
+  @ApiResponse({ status: 200, description: 'Sales report retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getSalesReport(@Req() req: any) {
+    const tenantClient = this.prisma.getTenantClient(req.user.dbName);
+    return tenantClient.sale.findMany({
+      include: {
+        customer: true,
+        saleItems: {
+          include: {
+            item: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('sales/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get sale by ID' })
+  @ApiResponse({ status: 200, description: 'Sale retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Sale not found' })
+  async getSaleById(@Param('id') id: string, @Req() req: any) {
+    const tenantClient = this.prisma.getTenantClient(req.user.dbName);
+    
+    const sale = await tenantClient.sale.findUnique({
+      where: { id },
+      include: {
+        customer: true,
+        saleItems: {
+          include: {
+            item: true,
+          },
+        },
+      },
+    });
+
+    if (!sale) {
+      throw new NotFoundException('Sale not found');
+    }
+
+    return sale;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('print/:id')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Print invoice' })
+  @ApiResponse({ status: 200, description: 'Invoice printed successfully' })
+  async printInvoice(@Param('id') id: string, @Req() req: any) {
+    try {
+      console.log('Print request received for sale ID:', id);
+      const success = await this.printService.printInvoice(id, req.user.dbName);
+      console.log('Print service result:', success);
+      if (success) {
+        return { message: 'Invoice printed successfully' };
+      } else {
+        console.error('Print service returned false');
+        throw new NotFoundException('Failed to print invoice');
+      }
+    } catch (error) {
+      console.error('Print controller error:', error);
+      throw new NotFoundException('Failed to print invoice');
     }
   }
 }

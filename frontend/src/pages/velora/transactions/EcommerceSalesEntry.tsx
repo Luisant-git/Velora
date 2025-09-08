@@ -39,6 +39,8 @@ const EcommerceSalesEntry: React.FC = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -162,6 +164,23 @@ const EcommerceSalesEntry: React.FC = () => {
   const totals = calculateTotals();
   const cartItemCount = saleItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.customer-dropdown-container')) {
+        setShowCustomerDropdown(false);
+      }
+    };
+
+    if (showCustomerDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCustomerDropdown]);
+
   return (
     <div className="container-fluid">
       <div className="page-header d-flex justify-content-between align-items-center">
@@ -179,20 +198,81 @@ const EcommerceSalesEntry: React.FC = () => {
       <Card className="custom-card mb-3">
         <Card.Body>
           <Form.Label>Select Customer</Form.Label>
-          <Form.Select
-            value={selectedCustomer?.id || ''}
-            onChange={(e) => {
-              const customer = customers.find(c => c.id === e.target.value);
-              setSelectedCustomer(customer || null);
-            }}
-          >
-            <option value="">Choose Customer</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.phone} - {customer.name}
-              </option>
-            ))}
-          </Form.Select>
+          <div className="position-relative customer-dropdown-container">
+            <div className="input-group">
+              <Form.Control
+                type="text"
+                placeholder="Search customer by name or phone"
+                value={customerSearch}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setCustomerSearch(value);
+                  setShowCustomerDropdown(value.length > 0);
+                  if (value === '') {
+                    setSelectedCustomer(null);
+                  }
+                }}
+                onFocus={() => {
+                  if (selectedCustomer) {
+                    setCustomerSearch('');
+                    setSelectedCustomer(null);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const filteredCustomers = customers.filter(customer => 
+                      customer.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                      customer.phone.includes(customerSearch)
+                    );
+                    if (filteredCustomers.length > 0) {
+                      setSelectedCustomer(filteredCustomers[0]);
+                      setCustomerSearch(`${filteredCustomers[0].phone} - ${filteredCustomers[0].name}`);
+                      setShowCustomerDropdown(false);
+                    }
+                  }
+                }}
+              />
+              <Button 
+                variant="outline-secondary" 
+                onClick={() => setShowCustomerDropdown(!showCustomerDropdown)}
+              >
+                <i className={`fe fe-chevron-${showCustomerDropdown ? 'up' : 'down'}`}></i>
+              </Button>
+            </div>
+            {showCustomerDropdown && (
+              <div className="position-absolute w-100 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto', top: '100%' }}>
+                {customers.filter(customer => 
+                  customer.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                  customer.phone.includes(customerSearch)
+                ).length > 0 ? (
+                  customers.filter(customer => 
+                    customer.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                    customer.phone.includes(customerSearch)
+                  ).slice(0, 10).map((customer) => (
+                    <div
+                      key={customer.id}
+                      className="p-2 border-bottom cursor-pointer"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => {
+                        setSelectedCustomer(customer);
+                        setCustomerSearch(`${customer.phone} - ${customer.name}`);
+                        setShowCustomerDropdown(false);
+                      }}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                    >
+                      <strong>{customer.phone}</strong> - {customer.name}
+                      {customer.email && <small className="d-block text-muted">{customer.email}</small>}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-2 text-muted text-center">
+                    No customers found
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </Card.Body>
       </Card>
 

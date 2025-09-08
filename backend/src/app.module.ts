@@ -9,6 +9,7 @@ import { CompanyController } from './controllers/company.controller';
 import { MigrationController } from './controllers/migration.controller';
 import { DashboardController } from './controllers/dashboard.controller';
 import { EmailService } from './services/email.service';
+import { PrintService } from './services/print.service';
 import { JwtStrategy } from './auth/jwt.strategy';
 
 @Module({
@@ -20,6 +21,6 @@ import { JwtStrategy } from './auth/jwt.strategy';
     }),
   ],
   controllers: [AppController, AdminController, CompanyController, MigrationController, DashboardController],
-  providers: [AppService, PrismaService, JwtStrategy, EmailService],
+  providers: [AppService, PrismaService, JwtStrategy, EmailService, PrintService],
 })
 export class AppModule {}

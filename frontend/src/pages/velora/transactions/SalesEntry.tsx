@@ -85,6 +85,9 @@ const SalesEntry: React.FC = () => {
   });
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
 
   const handleOpen = () => {
     setCurrentSale({
@@ -104,18 +107,31 @@ const SalesEntry: React.FC = () => {
 
   const handleClose = () => {
     setOpen(false);
+    setCustomerSearch('');
+    setShowCustomerDropdown(false);
+    setIsSearchingCustomer(false);
   };
 
   const handleCustomerSelect = (customer: Customer | null) => {
     setSelectedCustomer(customer);
+    setIsSearchingCustomer(false);
+    setShowCustomerDropdown(false);
     if (customer) {
       setCurrentSale(prev => ({
         ...prev,
         customerPhone: customer.phone,
         customerName: customer.name,
       }));
+      setCustomerSearch(`${customer.phone} - ${customer.name}`);
+    } else {
+      setCustomerSearch('');
     }
   };
+
+  const filteredCustomers = customers.filter(customer => 
+    customer.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    customer.phone.includes(customerSearch)
+  );
 
   const addSaleItem = () => {
     const newItem: SaleItem = {
@@ -242,6 +258,33 @@ const SalesEntry: React.FC = () => {
 
   const totals = calculateTotals();
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && customerSearch.trim().length > 0) {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.customer-dropdown-container')) {
+        e.preventDefault();
+        addSaleItem();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.customer-dropdown-container')) {
+        setShowCustomerDropdown(false);
+      }
+    };
+
+    if (showCustomerDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCustomerDropdown]);
+
   return (
     <div className="container-fluid">
       <div className="page-header">
@@ -265,7 +308,7 @@ const SalesEntry: React.FC = () => {
         </Card.Body>
       </Card>
 
-      <Modal show={open} onHide={handleClose} size="lg">
+      <Modal show={open} onHide={handleClose} size="lg" onKeyDown={handleKeyPress}>
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="fe fe-file-text me-2"></i>New Sales Entry
@@ -292,20 +335,64 @@ const SalesEntry: React.FC = () => {
               </Col>
               <Col md={12} className="mb-3">
                 <Form.Label>Customer</Form.Label>
-                <Form.Select
-                  value={selectedCustomer?.id || ''}
-                  onChange={(e) => {
-                    const customer = customers.find(c => c.id === e.target.value);
-                    handleCustomerSelect(customer || null);
-                  }}
-                >
-                  <option value="">Select Customer</option>
-                  {customers.map((customer) => (
-                    <option key={customer.id} value={customer.id}>
-                      {customer.phone} - {customer.name}
-                    </option>
-                  ))}
-                </Form.Select>
+                <div className="position-relative customer-dropdown-container">
+                  <Form.Control
+                    type="text"
+                    placeholder="Search customer by name or phone"
+                    value={customerSearch}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCustomerSearch(value);
+                      setShowCustomerDropdown(value.length > 0);
+                      setIsSearchingCustomer(true);
+                      if (value === '') {
+                        setSelectedCustomer(null);
+                      }
+                    }}
+                    onFocus={() => {
+                      if (selectedCustomer) {
+                        setCustomerSearch('');
+                        setSelectedCustomer(null);
+                      }
+                      setIsSearchingCustomer(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.stopPropagation();
+                        if (filteredCustomers.length > 0) {
+                          handleCustomerSelect(filteredCustomers[0]);
+                        }
+                      }
+                    }}
+                  />
+                  {showCustomerDropdown && customerSearch.length > 0 && (
+                    <div className="position-absolute w-100 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto', top: '100%' }}>
+                      {filteredCustomers.length > 0 ? (
+                        filteredCustomers.slice(0, 10).map((customer) => (
+                          <div
+                            key={customer.id}
+                            className="p-2 border-bottom cursor-pointer"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleCustomerSelect(customer)}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = 'white'}
+                          >
+                            <strong>{customer.phone}</strong> - {customer.name}
+                            {customer.email && <small className="d-block text-muted">{customer.email}</small>}
+                          </div>
+                        ))
+                      ) : customerSearch ? (
+                        <div className="p-2 text-muted text-center">
+                          No customers found for "{customerSearch}"
+                        </div>
+                      ) : (
+                        <div className="p-2 text-muted text-center">
+                          Start typing to search customers
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </Col>
             </Row>
           </Form>
@@ -315,7 +402,7 @@ const SalesEntry: React.FC = () => {
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h6>Items</h6>
             <Button variant="primary" size="sm" onClick={addSaleItem}>
-              <i className="fe fe-plus me-1"></i>Add Item
+              <i className="fe fe-plus me-1"></i>Add Item (Enter)
             </Button>
           </div>
 

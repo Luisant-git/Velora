@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Table, Button, Collapse } from 'react-bootstrap';
+import { Table, Button, Collapse, Toast } from 'react-bootstrap';
 import { APISale } from '../../../api/velora';
+import { printInvoice } from '../../../utils/printService';
 
 interface SalesTableProps {
   sales: APISale[];
@@ -9,6 +10,7 @@ interface SalesTableProps {
 
 const SalesTable: React.FC<SalesTableProps> = ({ sales, onDownloadInvoice }) => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [printing, setPrinting] = useState<string | null>(null);
 
   const toggleRow = (saleId: string) => {
     const newExpanded = new Set(expandedRows);
@@ -30,6 +32,22 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales, onDownloadInvoice }) => 
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const id = saleId.slice(-4).toUpperCase();
     return `INV${year}${month}${id}`;
+  };
+
+  const handlePrintInvoice = async (saleId: string) => {
+    setPrinting(saleId);
+    try {
+      const success = await printInvoice(saleId);
+      if (success) {
+        alert('Invoice printed successfully!');
+      } else {
+        alert('Failed to print invoice. Please check printer connection.');
+      }
+    } catch (error) {
+      alert('Print service error. Make sure the print service is running.');
+    } finally {
+      setPrinting(null);
+    }
   };
 
   return (
@@ -79,8 +97,22 @@ const SalesTable: React.FC<SalesTableProps> = ({ sales, onDownloadInvoice }) => 
                     variant="primary"
                     onClick={() => onDownloadInvoice(sale.id)}
                     title="Download Invoice"
+                    className="me-2"
                   >
                     <i className="fe fe-download"></i>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="success"
+                    onClick={() => handlePrintInvoice(sale.id)}
+                    title="Print Invoice"
+                    disabled={printing === sale.id}
+                  >
+                    {printing === sale.id ? (
+                      <i className="fe fe-loader"></i>
+                    ) : (
+                      <i className="fe fe-printer"></i>
+                    )}
                   </Button>
                 </td>
               </tr>
