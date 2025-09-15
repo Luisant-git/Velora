@@ -42,6 +42,10 @@ const EcommerceSalesEntry: React.FC = () => {
   const [showCart, setShowCart] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [tempItems, setTempItems] = useState<SaleItem[]>([]);
+  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '' });
 
   useEffect(() => {
     fetchData();
@@ -60,24 +64,89 @@ const EcommerceSalesEntry: React.FC = () => {
     }
   };
 
-  const addToCart = (item: Item) => {
-    const existingItem = saleItems.find(si => si.itemCode === item.itemCode);
+  const updateItemQuantity = (item: Item, quantity: number) => {
+    if (quantity <= 0) {
+      setTempItems(prev => prev.filter(si => si.itemCode !== item.itemCode));
+      return;
+    }
+    
+    const existingItem = tempItems.find(si => si.itemCode === item.itemCode);
     if (existingItem) {
-      updateQuantity(existingItem.id, existingItem.quantity + 1);
+      setTempItems(prev => prev.map(tempItem => {
+        if (tempItem.id === existingItem.id) {
+          const subtotal = quantity * tempItem.sellingPrice;
+          const discountAmount = (subtotal * tempItem.discount) / 100;
+          const taxableAmount = subtotal - discountAmount;
+          const taxAmount = (taxableAmount * tempItem.tax) / 100;
+          return { ...tempItem, quantity, total: taxableAmount + taxAmount };
+        }
+        return tempItem;
+      }));
     } else {
       const newSaleItem: SaleItem = {
         id: Date.now().toString(),
         itemCode: item.itemCode,
         itemName: item.itemName,
-        quantity: 1,
+        quantity,
         sellingPrice: item.sellingRate,
         tax: item.tax,
         discount: 0,
-        total: item.sellingRate + (item.sellingRate * item.tax / 100),
+        total: (item.sellingRate * quantity) + ((item.sellingRate * quantity) * item.tax / 100),
       };
-      setSaleItems(prev => [...prev, newSaleItem]);
-      // toast.success(`${item.itemName} added to cart`);
+      setTempItems(prev => [...prev, newSaleItem]);
     }
+  };
+
+  const getItemQuantity = (itemCode: string): number => {
+    const item = tempItems.find(si => si.itemCode === itemCode);
+    return item ? item.quantity : 0;
+  };
+
+  const handleConfirmOrder = () => {
+    if (tempItems.length === 0) {
+      toast.error('Please add items');
+      return;
+    }
+    setShowConfirmModal(true);
+  };
+
+  const confirmAndAddToInvoice = () => {
+    setSaleItems(tempItems);
+    setTempItems([]);
+    setShowConfirmModal(false);
+  };
+
+  const handleCreateCustomer = async () => {
+    if (!newCustomer.name || !newCustomer.phone) {
+      toast.error('Name and phone are required');
+      return;
+    }
+
+    try {
+      const createdCustomer = await veloraAPI.createCustomer(newCustomer);
+      setCustomers(prev => [...prev, createdCustomer]);
+      setSelectedCustomer(createdCustomer);
+      setCustomerSearch(`${createdCustomer.phone} - ${createdCustomer.name}`);
+      setNewCustomer({ name: '', phone: '', email: '' });
+      setShowNewCustomerModal(false);
+      toast.success('Customer created successfully');
+    } catch (error: any) {
+      toast.error(`Failed to create customer: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
+  const calculateTempTotals = () => {
+    const subtotal = tempItems.reduce((sum, item) => sum + (item.quantity * item.sellingPrice), 0);
+    const totalDiscount = tempItems.reduce((sum, item) => sum + ((item.quantity * item.sellingPrice * item.discount) / 100), 0);
+    const taxableAmount = subtotal - totalDiscount;
+    const totalTax = tempItems.reduce((sum, item) => {
+      const itemSubtotal = item.quantity * item.sellingPrice;
+      const itemDiscount = (itemSubtotal * item.discount) / 100;
+      const itemTaxable = itemSubtotal - itemDiscount;
+      return sum + ((itemTaxable * item.tax) / 100);
+    }, 0);
+    const grandTotal = taxableAmount + totalTax;
+    return { subtotal, totalDiscount, totalTax, grandTotal };
   };
 
   const updateQuantity = (id: string, quantity: number) => {
@@ -129,8 +198,8 @@ const EcommerceSalesEntry: React.FC = () => {
   };
 
   const handleCheckout = async () => {
-    if (!selectedCustomer || saleItems.length === 0) {
-      toast.error('Please select customer and add items');
+    if (saleItems.length === 0) {
+      toast.error('Please add items');
       return;
     }
 
@@ -138,7 +207,7 @@ const EcommerceSalesEntry: React.FC = () => {
     try {
       const totals = calculateTotals();
       const saleData = {
-        customerId: selectedCustomer.id,
+        customerId: selectedCustomer?.id || null,
         items: saleItems.map(item => {
           const foundItem = items.find(i => i.itemCode === item.itemCode);
           return {
@@ -264,10 +333,11 @@ const EcommerceSalesEntry: React.FC = () => {
                 }}
               />
               <Button 
-                variant="outline-secondary" 
-                onClick={() => setShowCustomerDropdown(!showCustomerDropdown)}
+                variant="primary" 
+                onClick={() => setShowNewCustomerModal(true)}
+                title="Add New Customer"
               >
-                <i className={`fe fe-chevron-${showCustomerDropdown ? 'up' : 'down'}`}></i>
+                <i className="fe fe-plus"></i>
               </Button>
             </div>
             {showCustomerDropdown && (
@@ -309,10 +379,19 @@ const EcommerceSalesEntry: React.FC = () => {
 
           <Card>
             <Card.Body>
-              <h6 className="mb-3">Products</h6>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0">Products</h6>
+                {tempItems.length > 0 && (
+                  <Button 
+                    variant="success" 
+                    onClick={handleConfirmOrder}
+                  >
+                    Confirm Order
+                  </Button>
+                )}
+              </div>
               <Row>
             {items.map((item) => {
-              const cartItem = saleItems.find(si => si.itemCode === item.itemCode);
               return (
                 <Col lg={3} md={4} sm={6} key={item.id} className="mb-3">
                   <Card className="h-100 product-card">
@@ -331,34 +410,23 @@ const EcommerceSalesEntry: React.FC = () => {
                       <div className="product-price mb-2">
                         <span className="selling-price fw-bold">₹{item.sellingRate}</span>
                       </div>
-                      {cartItem ? (
-                        <div className="d-flex align-items-center justify-content-center">
-                          <Button 
-                            size="sm" 
-                            variant="outline-secondary" 
-                            onClick={() => updateQuantity(cartItem.id, cartItem.quantity - 1)}
-                          >
-                            -
-                          </Button>
-                          <span className="mx-3 fw-bold">{cartItem.quantity}</span>
-                          <Button 
-                            size="sm" 
-                            variant="outline-secondary" 
-                            onClick={() => updateQuantity(cartItem.id, cartItem.quantity + 1)}
-                          >
-                            +
-                          </Button>
-                        </div>
-                      ) : (
+                      <div className="d-flex align-items-center justify-content-center">
                         <Button 
-                          variant="primary" 
                           size="sm" 
-                          className="w-100"
-                          onClick={() => addToCart(item)}
+                          variant="outline-secondary" 
+                          onClick={() => updateItemQuantity(item, getItemQuantity(item.itemCode) - 1)}
                         >
-                          <i className="fe fe-plus me-1"></i>Add to Cart
+                          -
                         </Button>
-                      )}
+                        <span className="mx-3 fw-bold">{getItemQuantity(item.itemCode)}</span>
+                        <Button 
+                          size="sm" 
+                          variant="outline-secondary" 
+                          onClick={() => updateItemQuantity(item, getItemQuantity(item.itemCode) + 1)}
+                        >
+                          +
+                        </Button>
+                      </div>
                     </Card.Body>
                   </Card>
                 </Col>
@@ -423,7 +491,7 @@ const EcommerceSalesEntry: React.FC = () => {
                       <Button 
                         variant="success" 
                         onClick={handleCheckout}
-                        disabled={!selectedCustomer || loading}
+                        disabled={loading}
                       >
                         {loading ? 'Saving...' : 'Save Invoice'}
                       </Button>
@@ -544,9 +612,105 @@ const EcommerceSalesEntry: React.FC = () => {
           <Button 
             variant="success" 
             onClick={handleCheckout} 
-            disabled={saleItems.length === 0 || !selectedCustomer || loading}
+            disabled={saleItems.length === 0 || loading}
           >
             {loading ? 'Saving...' : 'Save Invoice'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Confirm Order</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedCustomer && (
+            <>
+              <div className="mb-3">
+                <h6>Customer Details:</h6>
+                <p><strong>Name:</strong> {selectedCustomer.name}</p>
+                <p><strong>Phone:</strong> {selectedCustomer.phone}</p>
+                {selectedCustomer.email && <p><strong>Email:</strong> {selectedCustomer.email}</p>}
+              </div>
+              <hr />
+            </>
+          )}
+          <h6>Order Items:</h6>
+          <Table className="table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tempItems.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <strong>{item.itemName}</strong>
+                    <br />
+                    <small className="text-muted">{item.itemCode}</small>
+                  </td>
+                  <td>{item.quantity}</td>
+                  <td>₹{item.sellingPrice}</td>
+                  <td>₹{item.total.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+          <div className="text-end">
+            <h6>Total Amount: ₹{calculateTempTotals().grandTotal.toFixed(2)}</h6>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
+          <Button variant="success" onClick={confirmAndAddToInvoice}>
+            Add to Invoice
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={showNewCustomerModal} onHide={() => setShowNewCustomerModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Create New Customer</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Name *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter customer name"
+                value={newCustomer.name}
+                onChange={(e) => setNewCustomer(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Phone *</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter phone number"
+                value={newCustomer.phone}
+                onChange={(e) => setNewCustomer(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter email (optional)"
+                value={newCustomer.email}
+                onChange={(e) => setNewCustomer(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowNewCustomerModal(false)}>Cancel</Button>
+          <Button variant="primary" onClick={handleCreateCustomer}>
+            Create Customer
           </Button>
         </Modal.Footer>
       </Modal>
