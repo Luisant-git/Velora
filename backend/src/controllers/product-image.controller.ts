@@ -35,7 +35,7 @@ export class ProductImageController {
       limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     }),
   )
-  uploadImage(@UploadedFile() file: Express.Multer.File) {
+  uploadImage(@UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
