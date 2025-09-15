@@ -101,6 +101,7 @@ export class AdminController {
           gstNumber: dto.gstNumber,
           password: hashedPassword,
           isActive: dto.isActive ?? true,
+          allowedTransactions: dto.allowedTransactions || ['new-sales'],
           dbName,
           adminId: req.user.id,
         },
@@ -138,6 +139,7 @@ export class AdminController {
         pinCode: true,
         gstNumber: true,
         isActive: true,
+        allowedTransactions: true,
         dbName: true,
         createdAt: true,
         updatedAt: true,
@@ -165,6 +167,7 @@ export class AdminController {
       pinCode: dto.pinCode,
       gstNumber: dto.gstNumber,
       isActive: dto.isActive,
+      allowedTransactions: dto.allowedTransactions,
     };
 
     if (dto.password) {
@@ -187,6 +190,7 @@ export class AdminController {
         pinCode: true,
         gstNumber: true,
         isActive: true,
+        allowedTransactions: true,
         dbName: true,
         createdAt: true,
         updatedAt: true,
@@ -236,6 +240,7 @@ export class AdminController {
         pinCode: true,
         gstNumber: true,
         isActive: true,
+        allowedTransactions: true,
         dbName: true,
         createdAt: true,
         updatedAt: true,

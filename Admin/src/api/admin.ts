@@ -35,6 +35,7 @@ export interface CompanyData {
   country?: string;
   pinCode?: string;
   gstNumber?: string;
+  allowedTransactions?: string[];
 }
 
 export interface Company {
@@ -51,6 +52,7 @@ export interface Company {
   gstNumber?: string;
   isActive: boolean;
   dbName: string;
+  allowedTransactions?: string[];
   createdAt: string;
   updatedAt: string;
 }

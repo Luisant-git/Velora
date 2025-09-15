@@ -32,6 +32,9 @@ const Login = () => {
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('company', JSON.stringify(response.company));
       
+      // Dispatch custom event to refresh sidebar
+      window.dispatchEvent(new Event('companyLogin'));
+      
       toast.success('Login successful!');
       navigate("/dashboard");
     } catch (error: any) {

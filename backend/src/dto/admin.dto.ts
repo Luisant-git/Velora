@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsBoolean, IsOptional } from 'class-validator';
+import { IsEmail, IsString, IsBoolean, IsOptional, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AdminRegisterDto {
@@ -87,4 +87,9 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsString()
   gstNumber?: string;
+
+  @ApiProperty({ example: ['new-sales'], required: false })
+  @IsOptional()
+  @IsArray()
+  allowedTransactions?: string[];
 }

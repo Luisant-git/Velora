@@ -25,6 +25,7 @@ const CompanyMaster: React.FC = () => {
     confirmPassword: '',
     isActive: true,
     dbName: '',
+    allowedTransactions: ['new-sales'],
   })
   const [selectedState, setSelectedState] = useState<State | null>(null)
   const [filteredCities, setFilteredCities] = useState<string[]>([])
@@ -69,6 +70,7 @@ const CompanyMaster: React.FC = () => {
         confirmPassword: '',
         isActive: company.isActive,
         dbName: '',
+        allowedTransactions: company.allowedTransactions || ['new-sales'],
       })
     } else {
       setEditingCompany(null)
@@ -87,6 +89,7 @@ const CompanyMaster: React.FC = () => {
         confirmPassword: '',
         isActive: true,
         dbName: '',
+        allowedTransactions: ['new-sales'],
       })
     }
     setError('')
@@ -151,6 +154,7 @@ const CompanyMaster: React.FC = () => {
         gstNumber: formData.gstNumber,
         password: formData.password,
         isActive: formData.isActive,
+        allowedTransactions: formData.allowedTransactions,
       }
 
       if (editingCompany) {
@@ -298,6 +302,17 @@ const CompanyMaster: React.FC = () => {
                   value={formData.gstNumber}
                   onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
                 />
+              </Col>
+              <Col md={12} className="mb-3">
+                <Form.Label>Select Transactions in Frontend</Form.Label>
+                <Form.Control
+                  as="select"
+                  value={formData.allowedTransactions[0]}
+                  onChange={(e) => setFormData({ ...formData, allowedTransactions: [e.target.value] })}
+                >
+                  <option value="new-sales">New Sales Entry</option>
+                  <option value="ecommerce-sales">Sales Entry - Grid</option>
+                </Form.Control>
               </Col>
               <Col md={12} className="mb-3">
                 <Form.Label>Logo URL</Form.Label>

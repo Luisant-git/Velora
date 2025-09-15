@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Col, Row, Button, Form, Modal, Table } from 'react-bootstrap';
 import { toast } from 'react-toastify';
-import { veloraAPI, APISale } from '../../../api/velora';
-import SalesTable from './SalesTable';
+import { veloraAPI } from '../../../api/velora';
+import { useNavigate } from 'react-router-dom';
 
 interface Item {
   id: string;
@@ -32,25 +32,23 @@ interface SaleItem {
   total: number;
 }
 
-interface Sale {
-  id: string;
-  invoiceNo: string;
-  date: string;
-  customerPhone: string;
-  customerName: string;
-  items: SaleItem[];
-  subtotal: number;
-  totalTax: number;
-  grandTotal: number;
-}
-
-
-
-const SalesEntry: React.FC = () => {
+const NewSales: React.FC = () => {
+  const navigate = useNavigate();
   const [items, setItems] = useState<Item[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [apiSales, setApiSales] = useState<APISale[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '' });
+  const [itemSearches, setItemSearches] = useState<{[key: string]: string}>({});
+  const [showItemDropdowns, setShowItemDropdowns] = useState<{[key: string]: boolean}>({});
+  const [currentSale, setCurrentSale] = useState({
+    invoiceNo: `INV${String(Date.now()).slice(-4)}`,
+    date: new Date().toISOString().split('T')[0],
+  });
 
   useEffect(() => {
     fetchData();
@@ -58,62 +56,15 @@ const SalesEntry: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      const [itemsData, customersData, salesData] = await Promise.all([
+      const [itemsData, customersData] = await Promise.all([
         veloraAPI.getItems(),
-        veloraAPI.getCustomers(),
-        veloraAPI.getSales()
+        veloraAPI.getCustomers()
       ]);
       setItems(itemsData);
       setCustomers(customersData);
-      setApiSales(salesData);
     } catch (error) {
       toast.error('Failed to fetch data');
     }
-  };
-
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [open, setOpen] = useState(false);
-  const [currentSale, setCurrentSale] = useState<Partial<Sale>>({
-    invoiceNo: `INV${String(sales.length + 1).padStart(4, '0')}`,
-    date: new Date().toISOString().split('T')[0],
-    customerPhone: '',
-    customerName: '',
-    items: [],
-    subtotal: 0,
-    totalTax: 0,
-    grandTotal: 0,
-  });
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const [isSearchingCustomer, setIsSearchingCustomer] = useState(false);
-  const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '' });
-  const [itemSearches, setItemSearches] = useState<{[key: string]: string}>({});
-  const [showItemDropdowns, setShowItemDropdowns] = useState<{[key: string]: boolean}>({});
-
-  const handleOpen = () => {
-    setCurrentSale({
-      invoiceNo: `INV${String(sales.length + 1).padStart(4, '0')}`,
-      date: new Date().toISOString().split('T')[0],
-      customerPhone: '',
-      customerName: '',
-      items: [],
-      subtotal: 0,
-      totalTax: 0,
-      grandTotal: 0,
-    });
-    setSaleItems([]);
-    setSelectedCustomer(null);
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setCustomerSearch('');
-    setShowCustomerDropdown(false);
-    setIsSearchingCustomer(false);
   };
 
   const handleCreateCustomer = async () => {
@@ -136,14 +87,8 @@ const SalesEntry: React.FC = () => {
 
   const handleCustomerSelect = (customer: Customer | null) => {
     setSelectedCustomer(customer);
-    setIsSearchingCustomer(false);
     setShowCustomerDropdown(false);
     if (customer) {
-      setCurrentSale(prev => ({
-        ...prev,
-        customerPhone: customer.phone,
-        customerName: customer.name,
-      }));
       setCustomerSearch(`${customer.phone} - ${customer.name}`);
     } else {
       setCustomerSearch('');
@@ -174,7 +119,6 @@ const SalesEntry: React.FC = () => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
         
-        // Auto-fetch item details when item code is selected
         if (field === 'itemCode') {
           const selectedItem = items.find(i => i.itemCode === value);
           if (selectedItem) {
@@ -184,7 +128,6 @@ const SalesEntry: React.FC = () => {
           }
         }
         
-        // Calculate total
         const subtotal = updatedItem.quantity * updatedItem.sellingPrice;
         const discountAmount = (subtotal * updatedItem.discount) / 100;
         const taxableAmount = subtotal - discountAmount;
@@ -245,50 +188,17 @@ const SalesEntry: React.FC = () => {
         totalAmount: Number((totals.grandTotal || 0).toFixed(2))
       };
 
-      console.log('Sale Data:', JSON.stringify(saleData, null, 2));
       await veloraAPI.createSale(saleData);
       toast.success('Sale created successfully');
-      
-      const newSale: Sale = {
-        id: Date.now().toString(),
-        invoiceNo: currentSale.invoiceNo!,
-        date: currentSale.date!,
-        customerPhone: currentSale.customerPhone!,
-        customerName: currentSale.customerName!,
-        items: saleItems,
-        subtotal: totals.subtotal,
-        totalTax: totals.totalTax,
-        grandTotal: totals.grandTotal,
-      };
-
-      setSales([...sales, newSale]);
-      fetchData(); // Refresh sales data
-      handleClose();
+      navigate('/sales-entry');
     } catch (error: any) {
-      console.error('Sale creation error:', error);
-      console.error('Error response:', error.response?.data);
       toast.error(`Failed to create sale: ${error.response?.data?.message || error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownloadInvoice = (saleId: string) => {
-    // TODO: Implement invoice download functionality
-    toast.info('Invoice download feature coming soon!');
-  };
-
   const totals = calculateTotals();
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && customerSearch.trim().length > 0) {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.customer-dropdown-container')) {
-        e.preventDefault();
-        addSaleItem();
-      }
-    }
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -310,27 +220,11 @@ const SalesEntry: React.FC = () => {
   return (
     <div className="container-fluid">
       <div className="page-header">
-        <h4 className="page-title">Sales Entry List</h4>
+        <h4 className="page-title">New Sales Entry</h4>
       </div>
-
-
 
       <Card className="custom-card">
         <Card.Body>
-          <SalesTable 
-            sales={apiSales} 
-            onDownloadInvoice={handleDownloadInvoice}
-          />
-        </Card.Body>
-      </Card>
-
-      <Modal show={open} onHide={handleClose} size="lg" onKeyDown={handleKeyPress}>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <i className="fe fe-file-text me-2"></i>New Sales Entry
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
           <Form>
             <Row>
               <Col lg={6} md={12} className="mb-3">
@@ -361,7 +255,6 @@ const SalesEntry: React.FC = () => {
                         const value = e.target.value;
                         setCustomerSearch(value);
                         setShowCustomerDropdown(value.length > 0);
-                        setIsSearchingCustomer(true);
                         if (value === '') {
                           setSelectedCustomer(null);
                         }
@@ -371,12 +264,10 @@ const SalesEntry: React.FC = () => {
                           setCustomerSearch('');
                           setSelectedCustomer(null);
                         }
-                        setIsSearchingCustomer(true);
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          e.stopPropagation();
                           if (filteredCustomers.length > 0) {
                             handleCustomerSelect(filteredCustomers[0]);
                           }
@@ -407,13 +298,9 @@ const SalesEntry: React.FC = () => {
                             {customer.email && <small className="d-block text-muted">{customer.email}</small>}
                           </div>
                         ))
-                      ) : customerSearch ? (
-                        <div className="p-2 text-muted text-center">
-                          No customers found for "{customerSearch}"
-                        </div>
                       ) : (
                         <div className="p-2 text-muted text-center">
-                          Start typing to search customers
+                          No customers found for "{customerSearch}"
                         </div>
                       )}
                     </div>
@@ -595,14 +482,17 @@ const SalesEntry: React.FC = () => {
               </Card>
             </Col>
           </Row>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={handleClose}>Cancel</Button>
-          <Button variant="primary" onClick={handleSave} disabled={saleItems.length === 0 || loading}>
-            {loading ? 'Saving...' : 'Save Invoice'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+
+          <div className="d-flex justify-content-end mt-3">
+            <Button variant="secondary" className="me-2" onClick={() => navigate('/sales-entry')}>
+              Cancel
+            </Button>
+            <Button variant="success" onClick={handleSave} disabled={saleItems.length === 0 || loading}>
+              {loading ? 'Saving...' : 'Save Invoice'}
+            </Button>
+          </div>
+        </Card.Body>
+      </Card>
 
       <Modal show={showNewCustomerModal} onHide={() => setShowNewCustomerModal(false)}>
         <Modal.Header closeButton>
@@ -650,4 +540,4 @@ const SalesEntry: React.FC = () => {
   );
 };
 
-export default SalesEntry;
+export default NewSales;

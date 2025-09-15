@@ -1,6 +1,6 @@
 import  { Fragment, useEffect, useState } from 'react'
 import SimpleBar from 'simplebar-react';
-import { MENUITEMS } from './nav';
+import { getMenuItems } from './nav';
 import Menuloop from './menuloop';
 import { connect } from 'react-redux';
 import logo1 from "../../assets/images/brand-logos/desktop-logo.png";
@@ -16,7 +16,7 @@ import SpkTooltips from '../../@spk-reusable-components/reusable-uielements/spk-
 
 const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 
-	const [menuitems, setMenuitems] = useState(MENUITEMS);
+	const [menuitems, setMenuitems] = useState(getMenuItems());
 
 	function closeMenu() {
 		const closeMenudata = (items: any) => {
@@ -30,6 +30,15 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 	}
 
 	useEffect(() => {
+		// Refresh menu items to get latest allowedTransactions
+		setMenuitems(getMenuItems());
+
+		// Listen for localStorage changes and login events
+		const handleStorageChange = () => {
+			setMenuitems(getMenuItems());
+		};
+		window.addEventListener('storage', handleStorageChange);
+		window.addEventListener('companyLogin', handleStorageChange);
 
 		window.addEventListener('resize', menuResizeFn);
 		window.addEventListener('resize', checkHoriMenu);
@@ -45,6 +54,8 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 		}
 		mainContent!.addEventListener('click', menuClose);
 		return () => {
+			window.removeEventListener('storage', handleStorageChange);
+			window.removeEventListener('companyLogin', handleStorageChange);
 			window.removeEventListener("resize", menuResizeFn);
 			window.removeEventListener('resize', checkHoriMenu);
 		};
@@ -644,7 +655,7 @@ const Sidebar = ({ local_varaiable, ThemeChanger }: any) => {
 						<div className="slide-left" id="slide-left" onClick={() => { slideLeft(); }}> <svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191" width="24" height="24" viewBox="0 0 24 24"> <path d="M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z"></path> </svg> </div>
 
 						<ul className="main-menu" onClick={() => Sideclick()}>
-							{MENUITEMS.map((levelone: any, index: any) => (
+							{menuitems.map((levelone: any, index: any) => (
 								<Fragment key={index}>
 									<li className={`${levelone.menutitle ? 'slide__category' : ''} ${levelone.type === 'link' ? 'slide' : ''}
                                                ${levelone.type === 'sub' ? 'slide has-sub' : ''} ${levelone?.active ? 'open' : ''} ${levelone?.selected ? 'active' : ''}`}>

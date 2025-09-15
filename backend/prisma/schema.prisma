@@ -38,6 +38,7 @@ model Company {
   dbName      String   @unique           
   resetToken  String?                     
   resetTokenExpiry DateTime?              
+  allowedTransactions String[] @default(["new-sales"])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   

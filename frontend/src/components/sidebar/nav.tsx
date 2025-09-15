@@ -283,7 +283,46 @@ const NestedmenuIcon = (
     ></path>{" "}
   </svg>
 );
-export const MENUITEMS: any = [
+export const getMenuItems = () => {
+  const company = JSON.parse(localStorage.getItem('company') || '{}');
+  const allowedTransactions = company.allowedTransactions || [];
+  
+  console.log('Company data:', company);
+  console.log('Allowed transactions:', allowedTransactions);
+  
+  const transactions = [
+    {
+      path: `sales-entry`,
+      type: "link",
+      active: false,
+      selected: false,
+      title: "Sales Entry - List",
+    }
+  ];
+  
+  if (allowedTransactions.includes('new-sales')) {
+    transactions.push({
+      path: `new-sales`,
+      type: "link",
+      active: false,
+      selected: false,
+      title: "New Sales Entry",
+    });
+  }
+  
+  if (allowedTransactions.includes('ecommerce-sales')) {
+    transactions.push({
+      path: `ecommerce-sales`,
+      type: "link",
+      active: false,
+      selected: false,
+      title: "Sales Entry - Grid",
+    });
+  }
+  
+  console.log('Final transactions:', transactions);
+
+  return [
   {
     path: `dashboard`,
     icon: Dashboardicon,
@@ -342,22 +381,7 @@ export const MENUITEMS: any = [
     type: "sub",
     active: false,
     selected: false,
-    children: [
-      {
-        path: `sales-entry`,
-        type: "link",
-        active: false,
-        selected: false,
-        title: "Sales Entry",
-      },
-      {
-        path: `ecommerce-sales`,
-        type: "link",
-        active: false,
-        selected: false,
-        title: "E-commerce Sales",
-      },
-    ],
+    children: transactions,
   },
   {
     title: "Reports",
@@ -392,3 +416,6 @@ export const MENUITEMS: any = [
   //   ],
   // },
   ];
+};
+
+export const MENUITEMS = getMenuItems();

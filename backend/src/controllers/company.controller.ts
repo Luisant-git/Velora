@@ -49,6 +49,7 @@ export class CompanyController {
         email: company.email,
         name: company.name,
         isActive: company.isActive,
+        allowedTransactions: company.allowedTransactions,
       },
     };
   }
@@ -137,6 +138,7 @@ export class CompanyController {
         pinCode: true,
         gstNumber: true,
         isActive: true,
+        allowedTransactions: true,
         dbName: true,
         createdAt: true,
         updatedAt: true,
@@ -421,7 +423,27 @@ export class CompanyController {
   @ApiResponse({ status: 404, description: 'Customer not found' })
   async deleteCustomer(@Param('id') id: string, @Request() req) {
     const tenantClient = this.prisma.getTenantClient(req.user.dbName);
-    return tenantClient.customerMaster.delete({ where: { id } });
+    
+    try {
+      // Check if customer has any sales
+      const salesCount = await tenantClient.sale.count({
+        where: { customerId: id }
+      });
+      
+      if (salesCount > 0) {
+        throw new BadRequestException('Cannot delete customer with existing sales records');
+      }
+      
+      return await tenantClient.customerMaster.delete({ where: { id } });
+    } catch (error: any) {
+      if (error.code === 'P2003') {
+        throw new BadRequestException('Cannot delete customer with existing sales records');
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('Customer not found');
+      }
+      throw new BadRequestException(`Failed to delete customer: ${error.message}`);
+    }
   }
 
   // Sales

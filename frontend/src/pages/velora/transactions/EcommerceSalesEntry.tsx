@@ -206,8 +206,19 @@ const EcommerceSalesEntry: React.FC = () => {
     setLoading(true);
     try {
       const totals = calculateTotals();
+      
+      // Create a default customer if none selected
+      let customerId = selectedCustomer?.id;
+      if (!customerId) {
+        const defaultCustomer = await veloraAPI.createCustomer({
+          name: 'Walk-in Customer',
+          phone: '0000000000'
+        });
+        customerId = defaultCustomer.id;
+      }
+      
       const saleData = {
-        customerId: selectedCustomer?.id || null,
+        customerId,
         items: saleItems.map(item => {
           const foundItem = items.find(i => i.itemCode === item.itemCode);
           return {
@@ -290,20 +301,21 @@ const EcommerceSalesEntry: React.FC = () => {
   return (
     <div className="container-fluid">
       <Row>
-        <Col lg={8}>
+        <Col lg={12}>
           <div className="page-header d-flex justify-content-between align-items-center mb-3">
-            <h4 className="page-title mb-0">E-commerce Sales</h4>
+            <h4 className="page-title mb-0">Sales Entry Grid</h4>
           </div>
 
           <Card className="mb-3">
             <Card.Body>
-              <Form.Label>Select Customer</Form.Label>
-          <div className="position-relative customer-dropdown-container">
-            <div className="input-group">
+              <Form.Label>Select Customer (Optional)</Form.Label>
+          <div className="d-flex gap-2">
+            <div className="position-relative customer-dropdown-container flex-grow-1">
               <Form.Control
                 type="text"
                 placeholder="Search customer by name or phone"
                 value={customerSearch}
+                style={{ padding: '0.4rem 0.4rem' }}
                 onChange={(e) => {
                   const value = e.target.value;
                   setCustomerSearch(value);
@@ -332,14 +344,6 @@ const EcommerceSalesEntry: React.FC = () => {
                   }
                 }}
               />
-              <Button 
-                variant="primary" 
-                onClick={() => setShowNewCustomerModal(true)}
-                title="Add New Customer"
-              >
-                <i className="fe fe-plus"></i>
-              </Button>
-            </div>
             {showCustomerDropdown && (
               <div className="position-absolute w-100 bg-white border rounded shadow-sm" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto', top: '100%' }}>
                 {customers.filter(customer => 
@@ -374,6 +378,14 @@ const EcommerceSalesEntry: React.FC = () => {
               </div>
             )}
               </div>
+            <Button 
+              variant="primary" 
+              onClick={() => setShowNewCustomerModal(true)}
+              title="Add New Customer"
+            >
+              <i className="fe fe-plus me-1"></i>Add Customer
+            </Button>
+          </div>
             </Card.Body>
           </Card>
 
@@ -393,14 +405,14 @@ const EcommerceSalesEntry: React.FC = () => {
               <Row>
             {items.map((item) => {
               return (
-                <Col lg={3} md={4} sm={6} key={item.id} className="mb-3">
+                <Col lg={2} md={3} sm={4} key={item.id} className="mb-3">
                   <Card className="h-100 product-card">
-                    <Card.Body className="text-center p-3">
+                    <Card.Body className="text-center p-2">
                       <div className="product-image mb-2">
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.itemName} style={{ width: '100%', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />
+                          <img src={item.imageUrl} alt={item.itemName} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '8px' }} />
                         ) : (
-                          <div style={{ width: '100%', height: '80px', backgroundColor: '#f8f9fa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ width: '100%', height: '100px', backgroundColor: '#f8f9fa', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <i className="fe fe-package" style={{ fontSize: '2rem', color: '#6c757d' }}></i>
                           </div>
                         )}
@@ -437,97 +449,7 @@ const EcommerceSalesEntry: React.FC = () => {
           </Card>
         </Col>
         
-        <Col lg={4}>
-          <div className="sticky-top" style={{ top: '20px' }}>
-            <Card className="shadow invoice-summary-card">
-              <Card.Header className="bg-primary text-white">
-                <h6 className="mb-0">Invoice Summary</h6>
-              </Card.Header>
-              <Card.Body>
-                {saleItems.length === 0 ? (
-                  <div className="text-center py-4">
-                    <i className="fe fe-file-text" style={{ fontSize: '2rem', color: '#ccc' }}></i>
-                    <p className="mt-2 text-muted">No items added</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mb-3">
-                      {saleItems.map((item) => (
-                        <div key={item.id} className="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
-                          <div>
-                            <small className="fw-bold">{item.itemName}</small>
-                            <br />
-                            <small className="text-muted">{item.quantity} × ₹{item.sellingPrice}</small>
-                          </div>
-                          <div className="text-end">
-                            <small className="fw-bold">₹{item.total.toFixed(2)}</small>
-                            <br />
-                            <Button size="sm" variant="outline-danger" onClick={() => removeFromCart(item.id)}>
-                              <i className="fe fe-x"></i>
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <hr />
-                    <div className="d-flex justify-content-between mb-2">
-                      <span>Subtotal:</span>
-                      <span>₹{totals.subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-2">
-                      <span>Discount:</span>
-                      <span>-₹{totals.totalDiscount.toFixed(2)}</span>
-                    </div>
-                    <div className="d-flex justify-content-between mb-3">
-                      <span>Tax:</span>
-                      <span>₹{totals.totalTax.toFixed(2)}</span>
-                    </div>
-                    <hr />
-                    <div className="d-flex justify-content-between mb-3">
-                      <h6>Total:</h6>
-                      <h6>₹{totals.grandTotal.toFixed(2)}</h6>
-                    </div>
-                    <div className="d-grid gap-2">
-                      <Button 
-                        variant="success" 
-                        onClick={handleCheckout}
-                        disabled={loading}
-                      >
-                        {loading ? 'Saving...' : 'Save Invoice'}
-                      </Button>
-                      <div className="d-flex gap-2">
-                        <Button 
-                          variant="outline-primary" 
-                          size="sm" 
-                          className="flex-fill"
-                          onClick={() => window.print()}
-                        >
-                          <i className="fe fe-printer me-1"></i>Print
-                        </Button>
-                        <Button 
-                          variant="outline-secondary" 
-                          size="sm" 
-                          className="flex-fill"
-                          onClick={() => {
-                            const element = document.createElement('a');
-                            const file = new Blob([generateInvoiceText()], {type: 'text/plain'});
-                            element.href = URL.createObjectURL(file);
-                            element.download = `invoice-${Date.now()}.txt`;
-                            document.body.appendChild(element);
-                            element.click();
-                            document.body.removeChild(element);
-                          }}
-                        >
-                          <i className="fe fe-download me-1"></i>Download
-                        </Button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </Card.Body>
-            </Card>
-          </div>
-        </Col>
+
       </Row>
 
       <Modal show={showCart} onHide={() => setShowCart(false)} size="lg" className="invoice-modal">
@@ -620,54 +542,194 @@ const EcommerceSalesEntry: React.FC = () => {
       </Modal>
 
       <Modal show={showConfirmModal} onHide={() => setShowConfirmModal(false)} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Order</Modal.Title>
+        <Modal.Header closeButton className="bg-primary text-white">
+          <Modal.Title>
+            <i className="fe fe-file-text me-2"></i>Invoice Summary
+          </Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {selectedCustomer && (
-            <>
-              <div className="mb-3">
-                <h6>Customer Details:</h6>
-                <p><strong>Name:</strong> {selectedCustomer.name}</p>
-                <p><strong>Phone:</strong> {selectedCustomer.phone}</p>
-                {selectedCustomer.email && <p><strong>Email:</strong> {selectedCustomer.email}</p>}
-              </div>
+            <div className="mb-3">
+              <h6>Customer Details:</h6>
+              <p className="mb-1"><strong>Name:</strong> {selectedCustomer.name}</p>
+              <p className="mb-1"><strong>Phone:</strong> {selectedCustomer.phone}</p>
+              {selectedCustomer.email && <p className="mb-1"><strong>Email:</strong> {selectedCustomer.email}</p>}
               <hr />
-            </>
+            </div>
           )}
-          <h6>Order Items:</h6>
-          <Table className="table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tempItems.map((item) => (
-                <tr key={item.id}>
-                  <td>
-                    <strong>{item.itemName}</strong>
-                    <br />
-                    <small className="text-muted">{item.itemCode}</small>
-                  </td>
-                  <td>{item.quantity}</td>
-                  <td>₹{item.sellingPrice}</td>
-                  <td>₹{item.total.toFixed(2)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-          <div className="text-end">
-            <h6>Total Amount: ₹{calculateTempTotals().grandTotal.toFixed(2)}</h6>
+          <div className="mb-3">
+            {tempItems.map((item) => (
+              <div key={item.id} className="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                <div className="flex-grow-1">
+                  <div className="fw-bold" style={{ fontSize: '0.9rem' }}>{item.itemName}</div>
+                  <div className="d-flex align-items-center gap-2 mt-1">
+                    <div className="d-flex align-items-center">
+                      <Button 
+                        size="sm" 
+                        variant="outline-secondary" 
+                        onClick={() => {
+                          const newQuantity = item.quantity - 1;
+                          if (newQuantity <= 0) {
+                            setTempItems(prev => prev.filter(i => i.id !== item.id));
+                          } else {
+                            setTempItems(prev => prev.map(i => {
+                              if (i.id === item.id) {
+                                const subtotal = newQuantity * i.sellingPrice;
+                                const discountAmount = (subtotal * i.discount) / 100;
+                                const taxableAmount = subtotal - discountAmount;
+                                const taxAmount = (taxableAmount * i.tax) / 100;
+                                return { ...i, quantity: newQuantity, total: taxableAmount + taxAmount };
+                              }
+                              return i;
+                            }));
+                          }
+                        }}
+                      >
+                        -
+                      </Button>
+                      <span className="mx-2 fw-bold">{item.quantity}</span>
+                      <Button 
+                        size="sm" 
+                        variant="outline-secondary" 
+                        onClick={() => {
+                          const newQuantity = item.quantity + 1;
+                          setTempItems(prev => prev.map(i => {
+                            if (i.id === item.id) {
+                              const subtotal = newQuantity * i.sellingPrice;
+                              const discountAmount = (subtotal * i.discount) / 100;
+                              const taxableAmount = subtotal - discountAmount;
+                              const taxAmount = (taxableAmount * i.tax) / 100;
+                              return { ...i, quantity: newQuantity, total: taxableAmount + taxAmount };
+                            }
+                            return i;
+                          }));
+                        }}
+                      >
+                        +
+                      </Button>
+                    </div>
+                    <small className="text-muted">× ₹{item.sellingPrice}</small>
+                  </div>
+                </div>
+                <div className="text-end">
+                  <small className="fw-bold">₹{item.total.toFixed(2)}</small>
+                  <br />
+                  <Button size="sm" variant="outline-danger" onClick={() => setTempItems(prev => prev.filter(i => i.id !== item.id))}>
+                    <i className="fe fe-x"></i>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <hr />
+          <div className="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <span>₹{calculateTempTotals().subtotal.toFixed(2)}</span>
+          </div>
+          <div className="d-flex justify-content-between mb-2">
+            <span>Discount:</span>
+            <span>-₹{calculateTempTotals().totalDiscount.toFixed(2)}</span>
+          </div>
+          <div className="d-flex justify-content-between mb-3">
+            <span>Tax:</span>
+            <span>₹{calculateTempTotals().totalTax.toFixed(2)}</span>
+          </div>
+          <hr />
+          <div className="d-flex justify-content-between mb-3">
+            <h6>Total:</h6>
+            <h6>₹{calculateTempTotals().grandTotal.toFixed(2)}</h6>
+          </div>
+          <div className="d-flex gap-2">
+            <Button 
+              variant="outline-primary" 
+              size="sm" 
+              className="flex-fill"
+              onClick={() => window.print()}
+            >
+              <i className="fe fe-printer me-1"></i>Print
+            </Button>
+            <Button 
+              variant="outline-secondary" 
+              size="sm" 
+              className="flex-fill"
+              onClick={() => {
+                const element = document.createElement('a');
+                const file = new Blob([generateInvoiceText()], {type: 'text/plain'});
+                element.href = URL.createObjectURL(file);
+                element.download = `invoice-${Date.now()}.txt`;
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+              }}
+            >
+              <i className="fe fe-download me-1"></i>Download
+            </Button>
           </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
-          <Button variant="success" onClick={confirmAndAddToInvoice}>
-            Add to Invoice
+          <Button 
+            variant="success" 
+            onClick={async () => {
+              setSaleItems(tempItems);
+              setTempItems([]);
+              setShowConfirmModal(false);
+              
+              // Call handleCheckout with tempItems directly
+              if (tempItems.length === 0) {
+                toast.error('Please add items to the cart first');
+                return;
+              }
+
+              setLoading(true);
+              try {
+                const totals = calculateTempTotals();
+                
+                // Use existing Walk-in Customer or create once
+                let customerId = selectedCustomer?.id;
+                if (!customerId) {
+                  // Check if Walk-in Customer already exists
+                  const existingWalkIn = customers.find(c => c.phone === '0000000000');
+                  if (existingWalkIn) {
+                    customerId = existingWalkIn.id;
+                  } else {
+                    const defaultCustomer = await veloraAPI.createCustomer({
+                      name: 'Walk-in Customer',
+                      phone: '0000000000'
+                    });
+                    customerId = defaultCustomer.id;
+                    // Add to customers list to avoid creating duplicates
+                    setCustomers(prev => [...prev, defaultCustomer]);
+                  }
+                }
+                
+                const saleData = {
+                  customerId,
+                  items: tempItems.map(item => {
+                    const foundItem = items.find(i => i.itemCode === item.itemCode);
+                    return {
+                      itemId: foundItem!.id,
+                      quantity: Number(item.quantity),
+                      discount: Number(item.discount)
+                    };
+                  }),
+                  totalAmount: Number(totals.grandTotal.toFixed(2))
+                };
+
+                await veloraAPI.createSale(saleData);
+                toast.success('Sale completed successfully');
+                setSaleItems([]);
+                setSelectedCustomer(null);
+                setShowCart(false);
+              } catch (error: any) {
+                toast.error(`Failed to complete sale: ${error.response?.data?.message || error.message}`);
+              } finally {
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : 'Save Invoice'}
           </Button>
         </Modal.Footer>
       </Modal>
